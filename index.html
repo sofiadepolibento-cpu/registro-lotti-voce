@@ -204,7 +204,11 @@ return risultato.join(" e anche ");
 }
 function salva(){
 
-const testo = testoRiconosciuto.toLowerCase();
+let testo = testoRiconosciuto.toLowerCase();
+
+testo = testo.replaceAll("produzioni","produzione");
+
+testo = testo.replaceAll("ingredienti","ingrediente");
 
 
 const dati={
