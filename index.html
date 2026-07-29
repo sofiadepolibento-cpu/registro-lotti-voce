@@ -112,6 +112,31 @@ risultato=risultato.substring(0,b);
 return risultato.trim();
 
 }
+function estraiMulti(testo,inizio,fine){
+
+let risultato="";
+
+let parti=testo.split(inizio);
+
+for(let i=1;i<parti.length;i++){
+
+let pezzo=parti[i];
+
+let finePezzo=pezzo.indexOf(fine);
+
+if(finePezzo>=0){
+
+pezzo=pezzo.substring(0,finePezzo);
+
+}
+
+risultato += pezzo.trim() + ",";
+
+}
+
+return risultato.slice(0,-1);
+
+}  
 function salva(){
 
 const testo = testoRiconosciuto.toLowerCase();
@@ -125,11 +150,11 @@ lotto: estrai(testo,"lotto","quantità"),
 
 quantita: estrai(testo,"quantità","ingrediente"),
 
-ingrediente: estrai(testo,"ingrediente","lotto ingrediente"),
+ingrediente: estraiMulti(testo,"ingrediente","lotto ingrediente"),
 
-lottoIngrediente: estrai(testo,"lotto ingrediente","scadenza ingrediente"),
+lottoIngrediente: estraiMulti(testo,"lotto ingrediente","scadenza ingrediente"),
 
-scadenzaIngrediente: estrai(testo,"scadenza ingrediente","scadenza prodotto"),
+scadenzaIngrediente: estraiMulti(testo,"scadenza ingrediente","scadenza prodotto"),
 
 scadenzaProdotto: estrai(testo,"scadenza prodotto","note"),
 
