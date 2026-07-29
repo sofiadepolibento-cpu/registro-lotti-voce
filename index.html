@@ -181,3 +181,250 @@ note: estraiDopo(testo,"note","")
 
 </body>
 </html>
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Registro Lotti</title>
+
+
+<style>
+
+body{
+font-family:Arial;
+padding:20px;
+}
+
+button{
+width:100%;
+padding:15px;
+font-size:18px;
+margin-bottom:15px;
+}
+
+textarea{
+width:100%;
+height:150px;
+font-size:16px;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<h2>Registro Lotti</h2>
+
+
+<button onclick="avviaVoce()">🎤 PARLA</button>
+
+
+<textarea id="testo" placeholder="Dettatura..."></textarea>
+
+
+<button onclick="salva()">SALVA</button>
+
+
+
+<script>
+
+
+const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbz22zU9O2gsBLtlHZC92imCmLuO0haOaWNpge0j2rN3p7IlK8w2swFOCV2-Is6afqg/exec";
+
+
+
+let testoRiconosciuto="";
+
+
+
+function avviaVoce(){
+
+
+if(!("webkitSpeechRecognition" in window)){
+
+alert("Browser non compatibile");
+
+return;
+
+}
+
+
+
+const riconoscimento = new webkitSpeechRecognition();
+
+
+riconoscimento.lang="it-IT";
+
+riconoscimento.continuous=false;
+
+riconoscimento.interimResults=false;
+
+
+
+riconoscimento.onstart=function(){
+
+alert("Parla ora");
+
+};
+
+
+
+riconoscimento.onresult=function(event){
+
+
+testoRiconosciuto =
+event.results[0][0].transcript;
+
+
+document.getElementById("testo").value=testoRiconosciuto;
+
+
+};
+
+
+
+riconoscimento.onerror=function(event){
+
+alert("Errore microfono: " + event.error);
+
+};
+
+
+
+riconoscimento.start();
+
+
+}
+
+
+
+
+function estrai(testo,inizio,fine){
+
+
+let risultato="";
+
+
+let a=testo.toLowerCase().indexOf(inizio);
+
+
+if(a>=0){
+
+risultato=testo.substring(a+inizio.length);
+
+}
+
+
+if(fine!=""){
+
+
+let b=risultato.toLowerCase().indexOf(fine);
+
+
+if(b>=0){
+
+risultato=risultato.substring(0,b);
+
+}
+
+}
+
+
+return risultato.trim();
+
+}
+
+
+
+
+function salva(){
+
+
+const testo=testoRiconosciuto.toLowerCase();
+
+
+
+const dati={
+
+
+produzione:
+estrai(testo,"produzione","lotto"),
+
+
+lotto:
+estrai(testo,"lotto","quantità"),
+
+
+quantita:
+estrai(testo,"quantità","ingrediente"),
+
+
+ingrediente:
+estrai(testo,"ingrediente","lotto ingrediente"),
+
+
+lottoIngrediente:
+estrai(testo,"lotto ingrediente","scadenza ingrediente"),
+
+
+scadenzaIngrediente:
+estrai(testo,"scadenza ingrediente","scadenza prodotto"),
+
+
+scadenzaProdotto:
+estrai(testo,"scadenza prodotto","note"),
+
+
+note:
+estrai(testo,"note","")
+
+};
+
+
+
+fetch(URL_APPS_SCRIPT,{
+
+method:"POST",
+
+body:JSON.stringify(dati),
+
+headers:{
+"Content-Type":"text/plain"
+}
+
+})
+
+
+.then(r=>r.text())
+
+.then(()=>{
+
+alert("Salvato");
+
+})
+
+
+.catch(e=>{
+
+alert("Errore: "+e);
+
+});
+
+
+}
+
+
+
+</script>
+
+
+</body>
+
+</html>
