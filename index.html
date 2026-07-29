@@ -78,17 +78,53 @@ riconoscimento.start();
 }
 
 
+function estraiDopo(testo,inizio,fine){
 
+let parte="";
+
+let a=testo.indexOf(inizio);
+
+if(a>=0){
+
+parte=testo.substring(a+inizio.length);
+
+}
+
+if(fine!=""){
+
+let b=parte.indexOf(fine);
+
+if(b>=0){
+
+parte=parte.substring(0,b);
+
+}
+
+}
+
+return parte.trim();
+
+}
 function invia(){
 
-  const dati = {
-    produzione: testoRiconosciuto,
-    lotto: "",
-    quantita: "",
-    ingredienti: "",
-    scadenza: "",
-    note: ""
-  };
+  const testo = testoRiconosciuto.toLowerCase();
+
+
+const dati = {
+
+produzione: estraiDopo(testo,"produzione","lotto"),
+
+lotto: estraiDopo(testo,"lotto","quantità"),
+
+quantita: estraiDopo(testo,"quantità","ingredienti"),
+
+ingredienti: estraiDopo(testo,"ingredienti","scadenza prodotto"),
+
+scadenza: estraiDopo(testo,"scadenza prodotto","note"),
+
+note: estraiDopo(testo,"note","")
+
+};
 
   fetch("https://script.google.com/macros/s/AKfycbz22zU9O2gsBLtlHZC92imCmLuO0haOaWNpge0j2rN3p7IlK8w2swFOCV2-Is6afqg/exec", {
 
