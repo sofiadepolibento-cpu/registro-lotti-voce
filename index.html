@@ -1,199 +1,11 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Registro Lotti</title>
 
 <style>
-body {
-  font-family: Arial;
-  padding: 20px;
-}
-
-input, textarea {
-  width:100%;
-  padding:10px;
-  margin-bottom:10px;
-  font-size:16px;
-}
-
-button {
-  width:100%;
-  padding:15px;
-  font-size:18px;
-}
-</style>
-
-</head>
-
-<body>
-
-<h2>Registro Lotti</h2>
-
-<button onclick="avviaVoce()">🎤 Parla</button>
-
-<textarea id="testo" rows="8" placeholder="La dettatura comparirà qui"></textarea>
-
-<button onclick="invia()">SALVA</button>
-
-
-<script>
-
-let testoRiconosciuto = "";
-
-
-function avviaVoce(){
-
-const riconoscimento = new webkitSpeechRecognition();
-
-riconoscimento.lang="it-IT";
-
-riconoscimento.continuous=false;
-
-
-riconoscimento.onstart=function(){
-alert("Parla ora");
-};
-
-
-riconoscimento.onresult=function(event){
-
-testoRiconosciuto =
-event.results[0][0].transcript;
-
-document.getElementById("testo").value=testoRiconosciuto;
-
-};
-
-
-riconoscimento.onerror=function(event){
-
-alert("Errore microfono: " + event.error);
-
-};
-
-
-riconoscimento.start();
-
-}
-
-
-function estraiDopo(testo,inizio,fine){
-
-let parte="";
-
-let a=testo.indexOf(inizio);
-
-if(a>=0){
-
-parte=testo.substring(a+inizio.length);
-
-}
-
-if(fine!=""){
-
-let b=parte.indexOf(fine);
-
-if(b>=0){
-
-parte=parte.substring(0,b);
-
-}
-
-}
-
-return parte.trim();
-
-}
-function invia(){
-
-  const testo = testoRiconosciuto.toLowerCase();
-
-
-const dati = {
-
-produzione: estraiDopo(testo,"produzione","lotto"),
-
-lotto: estraiDopo(testo,"lotto","quantità"),
-
-quantita: estraiDopo(testo,"quantità","ingredienti"),
-
-ingredienti: estraiDopo(testo,"ingredienti","scadenza prodotto"),
-
-scadenza: estraiDopo(testo,"scadenza prodotto","note"),
-
-note: estraiDopo(testo,"note","")
-
-};
-
-  fetch("https://script.google.com/macros/s/AKfycbz22zU9O2gsBLtlHZC92imCmLuO0haOaWNpge0j2rN3p7IlK8w2swFOCV2-Is6afqg/exec", {
-
-    method: "POST",
-
-    body: JSON.stringify(dati),
-
-    headers: {
-      "Content-Type": "text/plain"
-    }
-
-  })
-  .then(response => response.text())
-  .then(result => {
-
-    alert("Dati inviati al registro");
-
-  })
-  .catch(error => {
-
-    alert("Errore invio: " + error);
-
-  });
-
-};
-
-
-  fetch("https://script.google.com/macros/s/AKfycbz22zU9O2gsBLtlHZC92imCmLuO0haOaWNpge0j2rN3p7IlK8w2swFOCV2-Is6afqg/exec", {
-
-    method: "POST",
-
-    body: JSON.stringify(dati),
-
-    headers: {
-      "Content-Type": "text/plain"
-    }
-
-  })
-  .then(response => response.text())
-  .then(result => {
-
-    alert("Dati inviati al registro");
-
-  })
-  .catch(error => {
-
-    alert("Errore invio: " + error);
-
-  });
-
-}
-
-</script>
-
-</body>
-</html>
-<!DOCTYPE html>
-
-<html>
-
-<head>
-
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>Registro Lotti</title>
-
-
-<style>
-
 body{
 font-family:Arial;
 padding:20px;
@@ -211,83 +23,55 @@ width:100%;
 height:150px;
 font-size:16px;
 }
-
 </style>
 
 </head>
 
-
 <body>
-
 
 <h2>Registro Lotti</h2>
 
-
 <button onclick="avviaVoce()">🎤 PARLA</button>
 
-
 <textarea id="testo" placeholder="Dettatura..."></textarea>
-
 
 <button onclick="salva()">SALVA</button>
 
 
-
 <script>
 
-
 const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbz22zU9O2gsBLtlHZC92imCmLuO0haOaWNpge0j2rN3p7IlK8w2swFOCV2-Is6afqg/exec";
-
 
 
 let testoRiconosciuto="";
 
 
-
 function avviaVoce(){
 
-
 if(!("webkitSpeechRecognition" in window)){
-
 alert("Browser non compatibile");
-
 return;
-
 }
-
-
 
 const riconoscimento = new webkitSpeechRecognition();
 
-
 riconoscimento.lang="it-IT";
-
 riconoscimento.continuous=false;
-
 riconoscimento.interimResults=false;
 
 
-
 riconoscimento.onstart=function(){
-
 alert("Parla ora");
-
 };
-
 
 
 riconoscimento.onresult=function(event){
 
-
-testoRiconosciuto =
-event.results[0][0].transcript;
-
+testoRiconosciuto = event.results[0][0].transcript;
 
 document.getElementById("testo").value=testoRiconosciuto;
 
-
 };
-
 
 
 riconoscimento.onerror=function(event){
@@ -297,96 +81,25 @@ alert("Errore microfono: " + event.error);
 };
 
 
-
 riconoscimento.start();
 
-
 }
-
-
-
-
-function estrai(testo,inizio,fine){
-
-
-let risultato="";
-
-
-let a=testo.toLowerCase().indexOf(inizio);
-
-
-if(a>=0){
-
-risultato=testo.substring(a+inizio.length);
-
-}
-
-
-if(fine!=""){
-
-
-let b=risultato.toLowerCase().indexOf(fine);
-
-
-if(b>=0){
-
-risultato=risultato.substring(0,b);
-
-}
-
-}
-
-
-return risultato.trim();
-
-}
-
-
 
 
 function salva(){
 
-
-const testo=testoRiconosciuto.toLowerCase();
-
-
-
 const dati={
 
-
-produzione:
-estrai(testo,"produzione","lotto"),
-
-
-lotto:
-estrai(testo,"lotto","quantità"),
-
-
-quantita:
-estrai(testo,"quantità","ingrediente"),
-
-
-ingrediente:
-estrai(testo,"ingrediente","lotto ingrediente"),
-
-
-lottoIngrediente:
-estrai(testo,"lotto ingrediente","scadenza ingrediente"),
-
-
-scadenzaIngrediente:
-estrai(testo,"scadenza ingrediente","scadenza prodotto"),
-
-
-scadenzaProdotto:
-estrai(testo,"scadenza prodotto","note"),
-
-
-note:
-estrai(testo,"note","")
+produzione:testoRiconosciuto,
+lotto:"",
+quantita:"",
+ingrediente:"",
+lottoIngrediente:"",
+scadenzaIngrediente:"",
+scadenzaProdotto:"",
+note:""
 
 };
-
 
 
 fetch(URL_APPS_SCRIPT,{
@@ -401,7 +114,6 @@ headers:{
 
 })
 
-
 .then(r=>r.text())
 
 .then(()=>{
@@ -410,20 +122,15 @@ alert("Salvato");
 
 })
 
-
 .catch(e=>{
 
 alert("Errore: "+e);
 
 });
 
-
 }
 
-
-
 </script>
-
 
 </body>
 
