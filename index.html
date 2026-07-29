@@ -150,11 +150,11 @@ lotto: estrai(testo,"lotto","quantità"),
 
 quantita: estrai(testo,"quantità","ingrediente"),
 
-ingrediente: estraiMulti(testo,"ingrediente","lotto ingrediente"),
+ingrediente: estrai(testo,"ingrediente","lotto ingrediente"),
 
-lottoIngrediente: estraiMulti(testo,"lotto ingrediente","scadenza ingrediente"),
+lottoIngrediente: estrai(testo,"lotto ingrediente","scadenza ingrediente"),
 
-scadenzaIngrediente: estraiMulti(testo,"scadenza ingrediente","scadenza prodotto"),
+scadenzaIngrediente: estrai(testo,"scadenza ingrediente","scadenza prodotto"),
 
 scadenzaProdotto: estrai(testo,"scadenza prodotto","note"),
 
