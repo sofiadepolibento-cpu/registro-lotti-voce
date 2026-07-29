@@ -85,19 +85,55 @@ riconoscimento.start();
 
 }
 
+function estrai(testo,inizio,fine){
 
+let risultato="";
+
+let a=testo.indexOf(inizio);
+
+if(a>=0){
+
+risultato=testo.substring(a+inizio.length);
+
+}
+
+if(fine!=""){
+
+let b=risultato.indexOf(fine);
+
+if(b>=0){
+
+risultato=risultato.substring(0,b);
+
+}
+
+}
+
+return risultato.trim();
+
+}
 function salva(){
+
+const testo = testoRiconosciuto.toLowerCase();
+
 
 const dati={
 
-produzione:testoRiconosciuto,
-lotto:"",
-quantita:"",
-ingrediente:"",
-lottoIngrediente:"",
-scadenzaIngrediente:"",
-scadenzaProdotto:"",
-note:""
+produzione: estrai(testo,"produzione","lotto"),
+
+lotto: estrai(testo,"lotto","quantità"),
+
+quantita: estrai(testo,"quantità","ingrediente"),
+
+ingrediente: estrai(testo,"ingrediente","lotto ingrediente"),
+
+lottoIngrediente: estrai(testo,"lotto ingrediente","scadenza ingrediente"),
+
+scadenzaIngrediente: estrai(testo,"scadenza ingrediente","scadenza prodotto"),
+
+scadenzaProdotto: estrai(testo,"scadenza prodotto","note"),
+
+note: estrai(testo,"note","")
 
 };
 
