@@ -137,6 +137,70 @@ risultato += pezzo.trim() + ",";
 return risultato.slice(0,-1);
 
 }  
+function estraiIngredienti(testo){
+
+let parti = testo.split("ingrediente ");
+
+let risultato = [];
+
+for(let i=1;i<parti.length;i++){
+
+let pezzo = parti[i];
+
+pezzo = pezzo.split(" lotto ")[0];
+
+risultato.push(pezzo.trim());
+
+}
+
+return risultato.join(" e anche ");
+
+}
+function estraiLotti(testo){
+
+let parti = testo.split(" lotto ");
+
+let risultato = [];
+
+for(let i=2;i<parti.length;i++){
+
+let pezzo = parti[i];
+
+pezzo = pezzo.split(" scadenza ")[0];
+
+risultato.push(pezzo.trim());
+
+}
+
+return risultato.join(" e anche ");
+
+}
+
+
+
+function estraiScadenze(testo){
+
+let parti = testo.split(" scadenza ");
+
+let risultato = [];
+
+for(let i=1;i<parti.length;i++){
+
+let pezzo = parti[i];
+
+pezzo = pezzo.split(" ingrediente ")[0];
+
+pezzo = pezzo.split(" scadenza prodotto ")[0];
+
+pezzo = pezzo.split(" note ")[0];
+
+risultato.push(pezzo.trim());
+
+}
+
+return risultato.join(" e anche ");
+
+}
 function salva(){
 
 const testo = testoRiconosciuto.toLowerCase();
@@ -150,11 +214,11 @@ lotto: estrai(testo,"lotto","quantità"),
 
 quantita: estrai(testo,"quantità","ingrediente"),
 
-ingrediente: estrai(testo,"ingrediente","lotto ingrediente"),
+ingrediente: estraiIngredienti(testo),
 
-lottoIngrediente: estrai(testo,"lotto ingrediente","scadenza ingrediente"),
+lottoIngrediente: estraiLotti(testo),
 
-scadenzaIngrediente: estrai(testo,"scadenza ingrediente","scadenza prodotto"),
+scadenzaIngrediente: estraiScadenze(testo),
 
 scadenzaProdotto: estrai(testo,"scadenza prodotto","note"),
 
