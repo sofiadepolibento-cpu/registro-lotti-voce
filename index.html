@@ -90,6 +90,31 @@ function invia(){
     note: ""
   };
 
+  fetch("https://script.google.com/macros/s/AKfycbz22zU9O2gsBLtlHZC92imCmLuO0haOaWNpge0j2rN3p7IlK8w2swFOCV2-Is6afqg/exec", {
+
+    method: "POST",
+
+    body: JSON.stringify(dati),
+
+    headers: {
+      "Content-Type": "text/plain"
+    }
+
+  })
+  .then(response => response.text())
+  .then(result => {
+
+    alert("Dati inviati al registro");
+
+  })
+  .catch(error => {
+
+    alert("Errore invio: " + error);
+
+  });
+
+};
+
 
   fetch("https://script.google.com/macros/s/AKfycbz22zU9O2gsBLtlHZC92imCmLuO0haOaWNpge0j2rN3p7IlK8w2swFOCV2-Is6afqg/exec", {
 
