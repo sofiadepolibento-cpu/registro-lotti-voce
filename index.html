@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registro Lotti</title>
+
+<style>
+body {
+  font-family: Arial;
+  padding: 20px;
+}
+
+input, textarea {
+  width:100%;
+  padding:10px;
+  margin-bottom:10px;
+  font-size:16px;
+}
+
+button {
+  width:100%;
+  padding:15px;
+  font-size:18px;
+}
+</style>
+
+</head>
+
+<body>
+
+<h2>Registro Lotti</h2>
+
+<button onclick="avviaVoce()">🎤 Parla</button>
+
+<textarea id="testo" rows="8" placeholder="La dettatura comparirà qui"></textarea>
+
+<button onclick="invia()">SALVA</button>
+
+
+<script>
+
+let testoRiconosciuto = "";
+
+
+function avviaVoce(){
+
+const riconoscimento = new webkitSpeechRecognition();
+
+riconoscimento.lang="it-IT";
+
+riconoscimento.continuous=false;
+
+
+riconoscimento.onstart=function(){
+alert("Parla ora");
+};
+
+
+riconoscimento.onresult=function(event){
+
+testoRiconosciuto =
+event.results[0][0].transcript;
+
+document.getElementById("testo").value=testoRiconosciuto;
+
+};
+
+
+riconoscimento.onerror=function(event){
+
+alert("Errore microfono: " + event.error);
+
+};
+
+
+riconoscimento.start();
+
+}
+
+
+
+function invia(){
+
+alert("Testo ricevuto:\n\n" + testoRiconosciuto);
+
+}
+
+</script>
+
+</body>
+</html>
