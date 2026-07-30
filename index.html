@@ -296,11 +296,11 @@ lotto: estrai(testo,"lotto","quantità"),
 
 quantita: estrai(testo,"quantità","ingrediente"),
 
-ingrediente: estraiIngredientiMultipli(testo).join(" e anche "),
+ingrediente: estraiIngredientiMultipli(testo).join(" | "),
 
-lottoIngrediente: estraiLottiMultipli(testo).join(" e anche "),
+lottoIngrediente: estraiLottiMultipli(testo).join(" | "),
 
-scadenzaIngrediente: estraiScadenzeMultiple(testo).join(" e anche "),
+scadenzaIngrediente: estraiScadenzeMultiple(testo).join(" | "),
 
 scadenzaProdotto: estrai(testo,"scadenza prodotto","note"),
 
