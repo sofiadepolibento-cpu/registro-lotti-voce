@@ -273,21 +273,16 @@ return risultato;
 } 
 function salva(){
 
-function salva(){
-
 let testo = testoRiconosciuto.toLowerCase();
 
 testo = testo.replaceAll("produzioni","produzione");
 testo = testo.replaceAll("ingredienti","ingrediente");
-
 testo = testo.replaceAll("ingredienti e ","ingrediente ");
 
 testo = testo.replaceAll("l'otto","lotto");
 testo = testo.replaceAll("l otto","lotto");
-testo = testo.replaceAll("l'8","lotto ");
-testo = testo.replaceAll("l 8","lotto ");
-
-const dati={
+testo = testo.replaceAll("l'8","lotto");
+testo = testo.replaceAll("l 8","lotto");
 
 
 const dati={
