@@ -254,19 +254,23 @@ function estraiScadenzeMultiple(testo){
 
 let risultato=[];
 
-let parti=testo.split(" ingrediente ");
+let parti = testo.split(" ingrediente ");
 
 for(let i=1;i<parti.length;i++){
 
-let pezzo=parti[i];
+let pezzo = parti[i];
 
-let scadenza=pezzo.split(" scadenza ")[1];
+let scadenza = pezzo.split(" scadenza ")[1];
 
 if(scadenza){
 
-scadenza=scadenza.split(" nuovo ingrediente ")[0];
+scadenza = scadenza.split(" nuovo ingrediente ")[0];
 
-scadenza=scadenza.split(" scadenza prodotto ")[0];
+scadenza = scadenza.split(" nuovi ingredienti ")[0];
+
+scadenza = scadenza.split(" scadenza prodotto ")[0];
+
+scadenza = scadenza.split(" note ")[0];
 
 risultato.push(scadenza.trim());
 
@@ -276,8 +280,7 @@ risultato.push(scadenza.trim());
 
 return risultato;
 
-}
-function salva(){
+}function salva(){
 
 let testo = testoRiconosciuto.toLowerCase();
 testo = testo.replaceAll(" e anche "," ");
@@ -285,6 +288,7 @@ testo = testo.replaceAll(" e anche "," ");
 testo = testo.replaceAll("produzioni","produzione");
 testo = testo.replaceAll("ingredienti","ingrediente");
 testo = testo.replaceAll("nuovi ingrediente","nuovo ingrediente");
+testo = testo.replaceAll("nuovi ingredienti","nuovo ingrediente");
 testo = testo.replaceAll("nuova ingrediente","nuovo ingrediente");
 testo = testo.replaceAll("ingredienti e ","ingrediente ");
 
