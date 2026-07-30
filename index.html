@@ -224,8 +224,6 @@ return risultato;
 
 }
 
-
-
 function estraiLottiMultipli(testo){
 
 let risultato=[];
@@ -251,7 +249,6 @@ risultato.push(lotto.trim());
 return risultato;
 
 }
-
 
 function estraiScadenzeMultiple(testo){
 
@@ -295,7 +292,8 @@ testo = testo.replaceAll("l'otto","lotto");
 testo = testo.replaceAll("l otto","lotto");
 testo = testo.replaceAll("l'8","lotto");
 testo = testo.replaceAll("l 8","lotto");
-
+testo = testo.replaceAll(" l8 "," lotto ");
+testo = testo.replaceAll("l 8 ","lotto ");
 
 const dati={
 
