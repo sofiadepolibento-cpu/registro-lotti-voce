@@ -230,18 +230,20 @@ function estraiLottiMultipli(testo){
 
 let risultato=[];
 
-let parti=testo.split(" lotto ");
+let parti=testo.split(" ingrediente ");
 
 for(let i=1;i<parti.length;i++){
 
 let pezzo=parti[i];
 
-pezzo=pezzo.split(" scadenza ")[0];
+let lotto=pezzo.split(" lotto ")[1];
 
-pezzo=pezzo.trim();
+if(lotto){
 
-if(pezzo!=""){
-risultato.push(pezzo);
+lotto=lotto.split(" scadenza ")[0];
+
+risultato.push(lotto.trim());
+
 }
 
 }
@@ -251,26 +253,25 @@ return risultato;
 }
 
 
-
 function estraiScadenzeMultiple(testo){
 
 let risultato=[];
 
-let parti=testo.split(" scadenza ");
+let parti=testo.split(" ingrediente ");
 
 for(let i=1;i<parti.length;i++){
 
 let pezzo=parti[i];
 
-pezzo=pezzo.split(" nuovo ingrediente ")[0];
+let scadenza=pezzo.split(" scadenza ")[1];
 
-pezzo=pezzo.split(" scadenza prodotto ")[0];
+if(scadenza){
 
-pezzo=pezzo.split(" note ")[0];
+scadenza=scadenza.split(" nuovo ingrediente ")[0];
 
-if(!pezzo.startsWith("prodotto")){
+scadenza=scadenza.split(" scadenza prodotto ")[0];
 
-risultato.push(pezzo.trim());
+risultato.push(scadenza.trim());
 
 }
 
