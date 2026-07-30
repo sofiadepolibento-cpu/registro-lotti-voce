@@ -229,23 +229,21 @@ return risultato;
 
 function estraiLottiMultipli(testo){
 
-let parti=testo.split(" ingrediente ");
-
 let risultato=[];
 
-for(let i=1;i<parti.length;i++){
+let parti = testo.match(/ingrediente .*? lotto (.*?) scadenza/g);
 
-let pezzo=parti[i];
+if(parti){
 
-let lotto=pezzo.split(" lotto ")[1];
+parti.forEach(function(p){
 
-if(lotto){
+let lotto = p.split(" lotto ")[1];
 
-lotto=lotto.split(" scadenza ")[0];
+lotto = lotto.replace(" scadenza","");
 
 risultato.push(lotto.trim());
 
-}
+});
 
 }
 
