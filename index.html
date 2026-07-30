@@ -202,15 +202,11 @@ risultato.push(pezzo.trim());
 return risultato.join(" e anche ");
 
 }
- function estraiIngredientiMultipli(testo){
-
-let parti = testo.split("nuovo ingrediente ");
+function estraiIngredientiMultipli(testo){
 
 let risultato=[];
 
-risultato.push(
-estrai(testo,"ingrediente","lotto")
-);
+let parti=testo.split(" ingrediente ");
 
 for(let i=1;i<parti.length;i++){
 
@@ -218,6 +214,8 @@ let pezzo=parti[i];
 
 pezzo=pezzo.split(" lotto ")[0];
 
+pezzo=pezzo.replace("e ","");
+
 risultato.push(pezzo.trim());
 
 }
@@ -225,25 +223,26 @@ risultato.push(pezzo.trim());
 return risultato;
 
 }
+
 
 
 function estraiLottiMultipli(testo){
 
 let risultato=[];
 
-let parti = testo.match(/ingrediente .*? lotto (.*?) scadenza/g);
+let parti=testo.split(" lotto ");
 
-if(parti){
+for(let i=1;i<parti.length;i++){
 
-parti.forEach(function(p){
+let pezzo=parti[i];
 
-let lotto = p.split(" lotto ")[1];
+pezzo=pezzo.split(" scadenza ")[0];
 
-lotto = lotto.replace(" scadenza","");
+pezzo=pezzo.trim();
 
-risultato.push(lotto.trim());
-
-});
+if(pezzo!=""){
+risultato.push(pezzo);
+}
 
 }
 
@@ -251,27 +250,29 @@ return risultato;
 
 }
 
+
+
 function estraiScadenzeMultiple(testo){
 
 let risultato=[];
 
-let parti = testo.split(" scadenza ");
+let parti=testo.split(" scadenza ");
 
 for(let i=1;i<parti.length;i++){
 
-let pezzo = parti[i];
+let pezzo=parti[i];
 
-if(pezzo.startsWith("prodotto")){
-continue;
-}
+pezzo=pezzo.split(" nuovo ingrediente ")[0];
 
-pezzo = pezzo.split(" nuovo ingrediente ")[0];
+pezzo=pezzo.split(" scadenza prodotto ")[0];
 
-pezzo = pezzo.split(" scadenza prodotto ")[0];
+pezzo=pezzo.split(" note ")[0];
 
-pezzo = pezzo.split(" note ")[0];
+if(!pezzo.startsWith("prodotto")){
 
 risultato.push(pezzo.trim());
+
+}
 
 }
 
