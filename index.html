@@ -98,6 +98,18 @@ document.querySelector("button").innerHTML="🎤 AVVIA REGISTRAZIONE";
 
 }
 
+};window.onload=function(){
+
+const parametri = new URLSearchParams(window.location.search);
+
+if(parametri.get("azione")=="nuovo"){
+
+document.querySelector("h2").innerHTML="Nuovo lotto pronto";
+
+document.querySelectorAll("button")[0].innerHTML="🎤 AVVIA REGISTRAZIONE";
+
+}
+
 };
   
 function estrai(testo,inizio,fine){
