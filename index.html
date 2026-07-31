@@ -86,6 +86,22 @@ riconoscimento.start();
 
 }
 
+window.onload=function(){
+
+const parametri = new URLSearchParams(window.location.search);
+
+if(parametri.get("azione")=="nuovo"){
+
+setTimeout(function(){
+
+avviaVoce();
+
+},1000);
+
+}
+
+};
+  
 function estrai(testo,inizio,fine){
 
 let risultato="";
