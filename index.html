@@ -219,7 +219,7 @@ produzione: estrai(testo,"produzione","lotto"),
 
 lotto: estrai(testo,"lotto","quantità"),
 
-quantita: estrai(testo,"quantità","ingrediente"),
+quantita: estrai(testo,"quantità","scadenza prodotto"),
 
 ingrediente: estraiIngredienti(testo).join("|"),
 
@@ -227,7 +227,7 @@ lottoIngrediente: estraiLotti(testo).join("|"),
 
 scadenzaIngrediente: estraiScadenze(testo).join("|"),
 
-scadenzaProdotto: estrai(testo,"scadenza prodotto","note"),
+scadenzaProdotto: estrai(testo,"scadenza prodotto","ingrediente"),
 
 note: estrai(testo,"note","")
 
