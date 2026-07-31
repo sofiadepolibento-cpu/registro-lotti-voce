@@ -92,11 +92,9 @@ const parametri = new URLSearchParams(window.location.search);
 
 if(parametri.get("azione")=="nuovo"){
 
-setTimeout(function(){
+document.querySelector("h2").innerHTML="Nuovo lotto pronto";
 
-avviaVoce();
-
-},1000);
+document.querySelector("button").innerHTML="🎤 AVVIA REGISTRAZIONE";
 
 }
 
