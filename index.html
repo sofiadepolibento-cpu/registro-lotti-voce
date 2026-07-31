@@ -278,11 +278,15 @@ alert("Errore: "+e);
 
 window.onload=function(){
 
-alert("pagina caricata");
-
 const parametri = new URLSearchParams(window.location.search);
 
-alert(parametri.get("azione"));
+if(parametri.get("azione")=="nuovo"){
+
+document.querySelector("h2").innerHTML="Nuovo lotto pronto";
+
+document.querySelector("button").innerHTML="🎤 AVVIA REGISTRAZIONE";
+
+}
 
 };
   
