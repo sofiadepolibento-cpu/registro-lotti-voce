@@ -113,67 +113,52 @@ risultato=risultato.substring(0,b);
 return risultato.trim();
 
 }
-function estraiMulti(testo,inizio,fine){
 
-let risultato="";
-
-let parti=testo.split(inizio);
-
-for(let i=1;i<parti.length;i++){
-
-let pezzo=parti[i];
-
-let finePezzo=pezzo.indexOf(fine);
-
-if(finePezzo>=0){
-
-pezzo=pezzo.substring(0,finePezzo);
-
-}
-
-risultato += pezzo.trim() + ",";
-
-}
-
-return risultato.slice(0,-1);
-
-}  
 function estraiIngredienti(testo){
 
-let parti = testo.split("ingrediente ");
+let risultato=[];
 
-let risultato = [];
+let blocchi=testo.split("ingrediente ");
 
-for(let i=1;i<parti.length;i++){
+for(let i=1;i<blocchi.length;i++){
 
-let pezzo = parti[i];
+let b=blocchi[i];
 
-pezzo = pezzo.split(" lotto ")[0];
+let nome=b.split(" lotto ")[0].trim();
 
-risultato.push(pezzo.trim());
+risultato.push(nome);
+
+}
+
+return risultato;
 
 }
 
-return risultato.join(" e anche ");
 
-}
+
 function estraiLotti(testo){
 
-let parti = testo.split(" lotto ");
+let risultato=[];
 
-let risultato = [];
+let blocchi=testo.split("ingrediente ");
 
-for(let i=2;i<parti.length;i++){
+for(let i=1;i<blocchi.length;i++){
 
-let pezzo = parti[i];
+let b=blocchi[i];
 
-pezzo = pezzo.split(" scadenza ")[0];
+let parti=b.split(" lotto ");
 
-risultato.push(pezzo.trim());
+if(parti.length>1){
+
+let lotto=parti[1].split(" scadenza ")[0].trim();
+
+risultato.push(lotto);
 
 }
 
-return risultato.join(" e anche ");
+}
+
+return risultato;
 
 }
 
@@ -181,96 +166,25 @@ return risultato.join(" e anche ");
 
 function estraiScadenze(testo){
 
-let parti = testo.split(" scadenza ");
-
-let risultato = [];
-
-for(let i=1;i<parti.length;i++){
-
-let pezzo = parti[i];
-
-pezzo = pezzo.split(" ingrediente ")[0];
-
-pezzo = pezzo.split(" scadenza prodotto ")[0];
-
-pezzo = pezzo.split(" note ")[0];
-
-risultato.push(pezzo.trim());
-
-}
-
-return risultato.join(" e anche ");
-
-}
-function estraiIngredientiMultipli(testo){
-
 let risultato=[];
 
-let parti=testo.split(" ingrediente ");
-
-for(let i=1;i<parti.length;i++){
-
-let pezzo=parti[i];
-
-pezzo=pezzo.split(" lotto ")[0];
-
-pezzo=pezzo.replace("e ","");
-
-risultato.push(pezzo.trim());
-
-}
-
-return risultato;
-
-}
-
-function estraiLottiMultipli(testo){
-
-let risultato=[];
-
-let parti=testo.split(" ingrediente ");
-
-for(let i=1;i<parti.length;i++){
-
-let pezzo=parti[i];
-
-let lotto=pezzo.split(" lotto ")[1];
-
-if(lotto){
-
-lotto=lotto.split(" scadenza ")[0];
-
-risultato.push(lotto.trim());
-
-}
-
-}
-
-return risultato;
-
-}
-
-function estraiScadenzeMultiple(testo){
-
-let risultato=[];
-
-let blocchi = testo.split("ingrediente ");
+let blocchi=testo.split("ingrediente ");
 
 for(let i=1;i<blocchi.length;i++){
 
-let pezzo = blocchi[i];
+let b=blocchi[i];
 
-let scadenza = pezzo.split(" scadenza ")[1];
+let parti=b.split(" scadenza ");
 
-if(scadenza){
+if(parti.length>1){
 
-scadenza = scadenza.split(" nuovo ")[0];
+let sc=parti[1];
 
-scadenza = scadenza.split(" scadenza prodotto ")[0];
+sc=sc.split(" ingrediente ")[0];
+sc=sc.split(" scadenza prodotto ")[0];
+sc=sc.split(" note ")[0];
 
-scadenza = scadenza.split(" note ")[0];
-
-risultato.push(scadenza.trim());
+risultato.push(sc.trim());
 
 }
 
@@ -307,11 +221,11 @@ lotto: estrai(testo,"lotto","quantità"),
 
 quantita: estrai(testo,"quantità","ingrediente"),
 
-ingrediente: estraiIngredientiMultipli(testo).join("|"),
- 
-lottoIngrediente: estraiLottiMultipli(testo).join("|"),
+ingrediente: estraiIngredienti(testo).join("|"),
 
-scadenzaIngrediente: estraiScadenzeMultiple(testo).join("|"),
+lottoIngrediente: estraiLotti(testo).join("|"),
+
+scadenzaIngrediente: estraiScadenze(testo).join("|"),
 
 scadenzaProdotto: estrai(testo,"scadenza prodotto","note"),
 
