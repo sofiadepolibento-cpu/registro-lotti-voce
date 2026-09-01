@@ -140,7 +140,11 @@ let b=blocchi[i];
 
 let nome=b.split(" lotto ")[0].trim();
 
+nome=nome.replace(/^e /,"").trim();
+
+if(nome!=""){
 risultato.push(nome);
+}
 
 }
 
@@ -211,6 +215,7 @@ return risultato;
 function salva(){
 
 let testo = testoRiconosciuto.toLowerCase();
+testo = testo.replaceAll("ingrediente e ","ingrediente ");
 testo = testo.replaceAll(" e anche "," ");
 
 testo = testo.replaceAll("produzioni","produzione");
