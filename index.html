@@ -256,17 +256,28 @@ return testo.trim();
 
 function estraiProduzione(testo){
 
-let risultato =
-estraiTra(
-testo,
-"produzione ",
-" quantità "
-);
+let posizione =
+testo.indexOf("produzione");
 
-return risultato.trim();
-
+if(posizione < 0){
+return "";
 }
 
+let inizio =
+posizione + "produzione".length;
+
+let fine =
+testo.indexOf("quantità", inizio);
+
+if(fine < 0){
+return "";
+}
+
+return testo
+.substring(inizio, fine)
+.trim();
+
+}
 
 
 /* =========================
