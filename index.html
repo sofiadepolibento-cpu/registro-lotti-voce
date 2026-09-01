@@ -2,10 +2,13 @@
 <html>
 
 <head>
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>Registro Lotti</title>
 
 <style>
+
 body{
 font-family:Arial;
 padding:20px;
@@ -23,130 +26,306 @@ width:100%;
 height:150px;
 font-size:16px;
 }
+
 </style>
 
 </head>
 
+
 <body>
 
-<h2>Registro Lotti</h2>
+<h2 id="titolo">Registro Lotti</h2>
 
-<button onclick="avviaVoce()">🎤 PARLA</button>
+<button id="bottoneParla" onclick="avviaVoce()">
+🎤 PARLA
+</button>
 
 <textarea id="testo" placeholder="Dettatura..."></textarea>
 
-<button onclick="salva()">SALVA</button>
+<button onclick="salva()">
+SALVA
+</button>
 
 
 <script>
 
-const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbz22zU9O2gsBLtlHZC92imCmLuO0haOaWNpge0j2rN3p7IlK8w2swFOCV2-Is6afqg/exec";
+
+const URL_APPS_SCRIPT =
+"https://script.google.com/macros/s/AKfycbz22zU9O2gsBLtlHZC92imCmLuO0haOaWNpge0j2rN3p7IlK8w2swFOCV2-Is6afqg/exec";
 
 
-let testoRiconosciuto="";
+let testoRiconosciuto = "";
 
+
+
+/* =========================
+   AVVIO REGISTRAZIONE
+========================= */
 
 function avviaVoce(){
 
 if(!("webkitSpeechRecognition" in window)){
+
 alert("Browser non compatibile");
+
 return;
+
 }
 
-const riconoscimento = new webkitSpeechRecognition();
 
-riconoscimento.lang="it-IT";
-riconoscimento.continuous=false;
-riconoscimento.interimResults=false;
+const riconoscimento =
+new webkitSpeechRecognition();
 
 
-riconoscimento.onstart=function(){
+riconoscimento.lang = "it-IT";
+
+riconoscimento.continuous = false;
+
+riconoscimento.interimResults = false;
+
+
+
+riconoscimento.onstart = function(){
+
 alert("Parla ora");
-};
-
-
-riconoscimento.onresult=function(event){
-
-testoRiconosciuto = event.results[0][0].transcript;
-
-document.getElementById("testo").value=testoRiconosciuto;
-
-alert(testoRiconosciuto);
 
 };
 
-riconoscimento.onerror=function(event){
+
+
+riconoscimento.onresult = function(event){
+
+testoRiconosciuto =
+event.results[0][0].transcript;
+
+document.getElementById("testo").value =
+testoRiconosciuto;
+
+};
+
+
+
+riconoscimento.onerror = function(event){
 
 alert("Errore microfono: " + event.error);
 
 };
 
 
+
 riconoscimento.start();
 
 }
 
-window.onload=function(){
 
-const parametri = new URLSearchParams(window.location.search);
 
-if(parametri.get("azione")=="nuovo"){
+/* =========================
+   PAGINA NUOVO LOTTO
+========================= */
 
-document.querySelector("h2").innerHTML="Nuovo lotto pronto";
+window.onload = function(){
 
-document.querySelectorAll("button")[0].innerHTML="🎤 AVVIA REGISTRAZIONE";
+const parametri =
+new URLSearchParams(window.location.search);
+
+
+if(parametri.get("azione") === "nuovo"){
+
+document.getElementById("titolo").innerHTML =
+"Nuovo lotto pronto";
+
+
+document.getElementById("bottoneParla").innerHTML =
+"🎤 AVVIA REGISTRAZIONE";
 
 }
 
 };
-  
-function estrai(testo,inizio,fine){
 
-let risultato="";
 
-let a=testo.indexOf(inizio);
 
-if(a>=0){
+/* =========================
+   NORMALIZZAZIONE TESTO
+========================= */
 
-risultato=testo.substring(a+inizio.length);
+function normalizzaTesto(testo){
+
+testo = testo.toLowerCase();
+
+
+/* produzione */
+
+testo = testo.replaceAll(
+"produzioni",
+"produzione"
+);
+
+
+/* ingredienti */
+
+testo = testo.replaceAll(
+"ingredienti",
+"ingrediente"
+);
+
+testo = testo.replaceAll(
+"nuovi ingredienti",
+"nuovo ingrediente"
+);
+
+testo = testo.replaceAll(
+"nuovi ingrediente",
+"nuovo ingrediente"
+);
+
+testo = testo.replaceAll(
+"nuova ingrediente",
+"nuovo ingrediente"
+);
+
+
+/* lotto pronunciato male */
+
+testo = testo.replaceAll(
+"l'otto",
+"lotto"
+);
+
+testo = testo.replaceAll(
+"l otto",
+"lotto"
+);
+
+testo = testo.replaceAll(
+"l'8",
+"lotto"
+);
+
+testo = testo.replaceAll(
+"l 8",
+"lotto"
+);
+
+testo = testo.replaceAll(
+" l8 ",
+" lotto "
+);
+
+
+/* eventuale "lottof123" */
+
+testo = testo.replaceAll(
+"lottof",
+"lotto f"
+);
+
+testo = testo.replaceAll(
+"lottol",
+"lotto l"
+);
+
+
+/* errore tipico del riconoscimento:
+   "ingrediente e lievito"
+   diventa "ingrediente lievito"
+*/
+
+testo = testo.replaceAll(
+"ingrediente e ",
+"ingrediente "
+);
+
+
+/* elimina collegamenti inutili */
+
+testo = testo.replaceAll(
+" e anche ",
+" "
+);
+
+
+return testo.trim();
 
 }
 
-if(fine!=""){
 
-let b=risultato.indexOf(fine);
 
-if(b>=0){
+/* =========================
+   ESTRAZIONE PRODUZIONE
+========================= */
 
-risultato=risultato.substring(0,b);
+function estraiProduzione(testo){
 
-}
-
-}
+let risultato =
+estraiTra(
+testo,
+"produzione ",
+" quantità "
+);
 
 return risultato.trim();
 
 }
 
+
+
+/* =========================
+   ESTRAZIONE QUANTITÀ
+========================= */
+
+function estraiQuantita(testo){
+
+let risultato =
+estraiTra(
+testo,
+"quantità ",
+" scadenza prodotto "
+);
+
+return risultato.trim();
+
+}
+
+
+
+/* =========================
+   ESTRAZIONE INGREDIENTI
+========================= */
+
 function estraiIngredienti(testo){
 
-let risultato=[];
+let risultato = [];
 
-let blocchi=testo.split("ingrediente ");
+let blocchi =
+testo.split("ingrediente ");
 
-for(let i=1;i<blocchi.length;i++){
 
-let b=blocchi[i];
+for(let i = 1; i < blocchi.length; i++){
 
-let nome=b.split(" lotto ")[0].trim();
+let blocco =
+blocchi[i].trim();
 
-nome=nome.replace(/^e /,"").trim();
 
-if(nome!=""){
+let nome =
+blocchi[i]
+.split(" lotto ")[0]
+.trim();
+
+
+/* elimina eventuale "e" iniziale */
+
+nome =
+nome.replace(/^e\s+/,"");
+
+
+if(nome !== ""){
+
 risultato.push(nome);
+
 }
 
 }
+
 
 return risultato;
 
@@ -154,21 +333,37 @@ return risultato;
 
 
 
+/* =========================
+   ESTRAZIONE LOTTI INGREDIENTI
+========================= */
+
 function estraiLotti(testo){
 
-let risultato=[];
+let risultato = [];
 
-let blocchi=testo.split("ingrediente ");
+let blocchi =
+testo.split("ingrediente ");
 
-for(let i=1;i<blocchi.length;i++){
 
-let b=blocchi[i];
+for(let i = 1; i < blocchi.length; i++){
 
-let parti=b.split(" lotto ");
+let blocco =
+blocchi[i];
 
-if(parti.length>1){
 
-let lotto=parti[1].split(" scadenza ")[0].trim();
+let parti =
+blocco.split(" lotto ");
+
+
+if(parti.length > 1){
+
+let lotto =
+parti[1]
+.split(" scadenza ")[0]
+.trim();
+
+
+if(lotto !== ""){
 
 risultato.push(lotto);
 
@@ -176,84 +371,209 @@ risultato.push(lotto);
 
 }
 
+}
+
+
 return risultato;
 
 }
 
 
+
+/* =========================
+   ESTRAZIONE SCADENZE INGREDIENTI
+========================= */
 
 function estraiScadenze(testo){
 
-let risultato=[];
+let risultato = [];
 
-let blocchi=testo.split("ingrediente ");
+let blocchi =
+testo.split("ingrediente ");
 
-for(let i=1;i<blocchi.length;i++){
 
-let b=blocchi[i];
+for(let i = 1; i < blocchi.length; i++){
 
-let parti=b.split(" scadenza ");
+let blocco =
+blocchi[i];
 
-if(parti.length>1){
 
-let sc=parti[1];
+let parti =
+blocco.split(" scadenza ");
 
-sc=sc.split(" ingrediente ")[0];
-sc=sc.split(" scadenza prodotto ")[0];
-sc=sc.split(" note ")[0];
 
-risultato.push(sc.trim());
+if(parti.length > 1){
+
+let scadenza =
+parti[1];
+
+
+scadenza =
+scadenza
+.split(" ingrediente ")[0];
+
+
+scadenza =
+scadenza
+.split(" scadenza prodotto ")[0];
+
+
+scadenza =
+scadenza
+.split(" note ")[0];
+
+
+scadenza =
+scadenza.trim();
+
+
+if(scadenza !== ""){
+
+risultato.push(scadenza);
 
 }
 
 }
+
+}
+
 
 return risultato;
 
 }
 
+
+
+/* =========================
+   FUNZIONE GENERALE
+========================= */
+
+function estraiTra(testo,inizio,fine){
+
+let posizioneInizio =
+testo.indexOf(inizio);
+
+
+if(posizioneInizio < 0){
+
+return "";
+
+}
+
+
+let inizioTesto =
+posizioneInizio + inizio.length;
+
+
+let posizioneFine =
+testo.indexOf(
+fine,
+inizioTesto
+);
+
+
+if(posizioneFine < 0){
+
+return testo
+.substring(inizioTesto)
+.trim();
+
+}
+
+
+return testo
+.substring(
+inizioTesto,
+posizioneFine
+)
+.trim();
+
+}
+
+
+
+/* =========================
+   SALVATAGGIO
+========================= */
+
 function salva(){
 
-let testo = testoRiconosciuto.toLowerCase();
-testo = testo.replaceAll("ingrediente e ","ingrediente ");
-testo = testo.replaceAll(" e anche "," ");
+if(!testoRiconosciuto){
 
-testo = testo.replaceAll("produzioni","produzione");
-testo = testo.replaceAll("ingredienti","ingrediente");
-testo = testo.replaceAll("nuovi ingrediente","nuovo ingrediente");
-testo = testo.replaceAll("nuovi ingredienti","nuovo ingrediente");
-testo = testo.replaceAll("nuova ingrediente","nuovo ingrediente");
-testo = testo.replaceAll("ingredienti e ","ingrediente ");
+alert("Prima fai una registrazione vocale.");
 
-testo = testo.replaceAll("l'otto","lotto");
-testo = testo.replaceAll("l otto","lotto");
-testo = testo.replaceAll("l'8","lotto");
-testo = testo.replaceAll("l 8","lotto");
-testo = testo.replaceAll(" l8 "," lotto ");
-testo = testo.replaceAll("l 8 ","lotto ");
+return;
 
-const dati={
+}
 
-produzione: estrai(testo,"produzione","quantità"),
 
-lotto: "",
+let testo =
+normalizzaTesto(testoRiconosciuto);
 
-quantita: estrai(testo,"quantità","scadenza prodotto").split(" ingrediente ")[0].trim(),
 
-ingrediente: estraiIngredienti(testo).join("|"),
 
-lottoIngrediente: estraiLotti(testo).join("|"),
+/* DATI */
 
-scadenzaIngrediente: estraiScadenze(testo).join("|"),
+const dati = {
 
-scadenzaProdotto: estrai(testo,"scadenza prodotto","ingrediente").trim(),
 
-note: estrai(testo,"note","").trim()
+produzione:
+estraiProduzione(testo),
+
+
+/*
+Il lotto della produzione
+NON viene più preso dalla voce.
+
+Code.gs lo calcola automaticamente.
+*/
+
+lotto:
+"",
+
+
+quantita:
+estraiQuantita(testo),
+
+
+ingrediente:
+estraiIngredienti(testo).join("|"),
+
+
+lottoIngrediente:
+estraiLotti(testo).join("|"),
+
+
+scadenzaIngrediente:
+estraiScadenze(testo).join("|"),
+
+
+scadenzaProdotto:
+estraiTra(
+testo,
+"scadenza prodotto ",
+"ingrediente "
+).trim(),
+
+
+note:
+estraiTra(
+testo,
+"note ",
+""
+).trim()
 
 };
 
 
-fetch(URL_APPS_SCRIPT,{
+
+/* =========================
+   INVIO A GOOGLE APPS SCRIPT
+========================= */
+
+fetch(
+URL_APPS_SCRIPT,
+{
 
 method:"POST",
 
@@ -263,24 +583,33 @@ headers:{
 "Content-Type":"text/plain"
 }
 
+}
+)
+
+
+.then(function(r){
+
+return r.text();
+
 })
 
-.then(r=>r.text())
 
-.then(()=>{
+.then(function(){
 
 alert("Salvato");
 
 })
 
-.catch(e=>{
 
-alert("Errore: "+e);
+.catch(function(e){
+
+alert("Errore: " + e);
 
 });
 
 }
-  
+
+
 </script>
 
 </body>
