@@ -275,12 +275,39 @@ return risultato.trim();
 
 function estraiQuantita(testo){
 
-let risultato =
-estraiTra(
-testo,
-"quantità ",
-" scadenza prodotto "
-);
+let risultato = "";
+
+let posizione =
+testo.indexOf("quantità ");
+
+if(posizione < 0){
+return "";
+}
+
+let inizio =
+posizione + "quantità ".length;
+
+let fine =
+testo.indexOf(" scadenza prodotto ", inizio);
+
+if(fine < 0){
+
+fine =
+testo.indexOf(" prodotto ", inizio);
+
+}
+
+if(fine >= 0){
+
+risultato =
+testo.substring(inizio, fine);
+
+}else{
+
+risultato =
+testo.substring(inizio);
+
+}
 
 return risultato.trim();
 
@@ -496,6 +523,65 @@ posizioneFine
    SALVATAGGIO
 ========================= */
 
+function estraiScadenzaProdotto(testo){
+
+let risultato = "";
+
+let posizione =
+testo.indexOf("scadenza prodotto ");
+
+if(posizione >= 0){
+
+let inizio =
+posizione + "scadenza prodotto ".length;
+
+let fine =
+testo.indexOf(" ingrediente ", inizio);
+
+if(fine < 0){
+fine = testo.indexOf(" note ", inizio);
+}
+
+if(fine >= 0){
+risultato = testo.substring(inizio, fine);
+}else{
+risultato = testo.substring(inizio);
+}
+
+return risultato.trim();
+
+}
+
+
+/* Se la voce ha perso "scadenza" e rimane solo "prodotto" */
+
+posizione =
+testo.indexOf(" prodotto ");
+
+if(posizione >= 0){
+
+let inizio =
+posizione + " prodotto ".length;
+
+let fine =
+testo.indexOf(" ingrediente ", inizio);
+
+if(fine < 0){
+fine = testo.indexOf(" note ", inizio);
+}
+
+if(fine >= 0){
+risultato = testo.substring(inizio, fine);
+}else{
+risultato = testo.substring(inizio);
+}
+
+}
+
+return risultato.trim();
+
+}
+
 function salva(){
 
 if(!testoRiconosciuto){
@@ -548,12 +634,7 @@ scadenzaIngrediente:
 estraiScadenze(testo).join("|"),
 
 
-scadenzaProdotto:
-estraiTra(
-testo,
-"scadenza prodotto ",
-"ingrediente "
-).trim(),
+scadenzaProdotto: estraiScadenzaProdotto(testo),
 
 
 note:
