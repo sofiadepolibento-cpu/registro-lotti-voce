@@ -582,6 +582,22 @@ return risultato.trim();
 
 }
 
+function estraiNote(testo){
+
+let posizione = testo.indexOf(" note ");
+
+if(posizione >= 0){
+
+return testo.substring(
+posizione + " note ".length
+).trim();
+
+}
+
+return "";
+
+}
+   
 function salva(){
 
 if(!testoRiconosciuto){
@@ -637,12 +653,7 @@ estraiScadenze(testo).join("|"),
 scadenzaProdotto: estraiScadenzaProdotto(testo),
 
 
-note:
-estraiTra(
-testo,
-"note ",
-""
-).trim()
+note: estraiNote(testo),
 
 };
 
