@@ -241,9 +241,9 @@ lottoIngrediente: estraiLotti(testo).join("|"),
 
 scadenzaIngrediente: estraiScadenze(testo).join("|"),
 
-scadenzaProdotto: estrai(testo,"scadenza prodotto","note"),
+scadenzaProdotto: estrai(testo,"scadenza prodotto","ingrediente").trim(),
 
-note: estrai(testo,"note","")
+note: estrai(testo,"note","").trim()
 
 };
 
