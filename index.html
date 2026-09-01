@@ -581,23 +581,20 @@ risultato = testo.substring(inizio);
 return risultato.trim();
 
 }
-
 function estraiNote(testo){
 
-let posizione = testo.indexOf(" note ");
+let posizione = testo.indexOf("note");
 
-if(posizione >= 0){
-
-return testo.substring(
-posizione + " note ".length
-).trim();
-
-}
-
+if(posizione < 0){
 return "";
-
 }
-   
+
+let risultato =
+testo.substring(posizione + 4).trim();
+
+return risultato;
+
+}   
 function salva(){
 
 if(!testoRiconosciuto){
