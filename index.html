@@ -94,18 +94,6 @@ if(parametri.get("azione")=="nuovo"){
 
 document.querySelector("h2").innerHTML="Nuovo lotto pronto";
 
-document.querySelector("button").innerHTML="🎤 AVVIA REGISTRAZIONE";
-
-}
-
-};window.onload=function(){
-
-const parametri = new URLSearchParams(window.location.search);
-
-if(parametri.get("azione")=="nuovo"){
-
-document.querySelector("h2").innerHTML="Nuovo lotto pronto";
-
 document.querySelectorAll("button")[0].innerHTML="🎤 AVVIA REGISTRAZIONE";
 
 }
@@ -241,11 +229,11 @@ testo = testo.replaceAll("l 8 ","lotto ");
 
 const dati={
 
-produzione: estrai(testo,"produzione","lotto"),
+produzione: estrai(testo,"produzione","quantità"),
 
-lotto: estrai(testo,"lotto","quantità"),
+lotto: "",
 
-quantita: estrai(testo,"quantità","scadenza prodotto"),
+quantita: estrai(testo,"quantità","scadenza prodotto").split(" ingrediente ")[0].trim(),
 
 ingrediente: estraiIngredienti(testo).join("|"),
 
@@ -253,7 +241,7 @@ lottoIngrediente: estraiLotti(testo).join("|"),
 
 scadenzaIngrediente: estraiScadenze(testo).join("|"),
 
-scadenzaProdotto: estrai(testo,"scadenza prodotto","ingrediente"),
+scadenzaProdotto: estrai(testo,"scadenza prodotto","note"),
 
 note: estrai(testo,"note","")
 
