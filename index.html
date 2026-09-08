@@ -225,10 +225,7 @@ testo = testo.replaceAll(
 );
 
 
-/* errore tipico del riconoscimento:
-   "ingrediente e lievito"
-   diventa "ingrediente lievito"
-*/
+/* errore tipico del riconoscimento */
 
 testo = testo.replaceAll(
 "ingrediente e ",
@@ -244,7 +241,44 @@ testo = testo.replaceAll(
 );
 
 
+/* eventuale parola "categoria" */
+
+testo = testo.replaceAll(
+"categoria ",
+""
+);
+
+
 return testo.trim();
+
+}
+
+
+
+/* =========================
+   ESTRAZIONE CATEGORIA
+========================= */
+
+function estraiCategoria(testo){
+
+let posizione =
+testo.indexOf("produzione");
+
+
+if(posizione < 0){
+
+return "";
+
+}
+
+
+let categoria =
+testo
+.substring(0, posizione)
+.trim();
+
+
+return categoria;
 
 }
 
@@ -278,6 +312,7 @@ return testo
 .trim();
 
 }
+
 
 
 /* =========================
@@ -483,55 +518,7 @@ return risultato;
 
 
 /* =========================
-   FUNZIONE GENERALE
-========================= */
-
-function estraiTra(testo,inizio,fine){
-
-let posizioneInizio =
-testo.indexOf(inizio);
-
-
-if(posizioneInizio < 0){
-
-return "";
-
-}
-
-
-let inizioTesto =
-posizioneInizio + inizio.length;
-
-
-let posizioneFine =
-testo.indexOf(
-fine,
-inizioTesto
-);
-
-
-if(posizioneFine < 0){
-
-return testo
-.substring(inizioTesto)
-.trim();
-
-}
-
-
-return testo
-.substring(
-inizioTesto,
-posizioneFine
-)
-.trim();
-
-}
-
-
-
-/* =========================
-   SALVATAGGIO
+   SCADENZA PRODOTTO
 ========================= */
 
 function estraiScadenzaProdotto(testo){
@@ -541,71 +528,118 @@ let risultato = "";
 let posizione =
 testo.indexOf("scadenza prodotto ");
 
+
 if(posizione >= 0){
 
 let inizio =
 posizione + "scadenza prodotto ".length;
 
+
 let fine =
 testo.indexOf(" ingrediente ", inizio);
 
+
 if(fine < 0){
-fine = testo.indexOf(" note ", inizio);
+fine =
+testo.indexOf(" note ", inizio);
 }
 
+
 if(fine >= 0){
-risultato = testo.substring(inizio, fine);
+
+risultato =
+testo.substring(inizio, fine);
+
 }else{
-risultato = testo.substring(inizio);
+
+risultato =
+testo.substring(inizio);
+
 }
+
 
 return risultato.trim();
 
 }
 
 
-/* Se la voce ha perso "scadenza" e rimane solo "prodotto" */
+
+/* Se la voce ha perso "scadenza" */
 
 posizione =
 testo.indexOf(" prodotto ");
+
 
 if(posizione >= 0){
 
 let inizio =
 posizione + " prodotto ".length;
 
+
 let fine =
 testo.indexOf(" ingrediente ", inizio);
 
+
 if(fine < 0){
-fine = testo.indexOf(" note ", inizio);
+
+fine =
+testo.indexOf(" note ", inizio);
+
 }
+
 
 if(fine >= 0){
-risultato = testo.substring(inizio, fine);
+
+risultato =
+testo.substring(inizio, fine);
+
 }else{
-risultato = testo.substring(inizio);
+
+risultato =
+testo.substring(inizio);
+
 }
 
 }
+
 
 return risultato.trim();
 
 }
+
+
+
+/* =========================
+   NOTE
+========================= */
+
 function estraiNote(testo){
 
-let posizione = testo.indexOf("note");
+let posizione =
+testo.indexOf("note");
+
 
 if(posizione < 0){
+
 return "";
+
 }
+
 
 let risultato =
 testo.substring(posizione + 4).trim();
 
+
 return risultato;
 
-}   
+}
+
+
+
+/* =========================
+   SALVATAGGIO
+========================= */
+
 function salva(){
 
 if(!testoRiconosciuto){
@@ -622,9 +656,15 @@ normalizzaTesto(testoRiconosciuto);
 
 
 
-/* DATI */
+/* =========================
+   DATI
+========================= */
 
 const dati = {
+
+
+categoria:
+estraiCategoria(testo),
 
 
 produzione:
@@ -633,7 +673,7 @@ estraiProduzione(testo),
 
 /*
 Il lotto della produzione
-NON viene più preso dalla voce.
+NON viene preso dalla voce.
 
 Code.gs lo calcola automaticamente.
 */
@@ -658,12 +698,30 @@ scadenzaIngrediente:
 estraiScadenze(testo).join("|"),
 
 
-scadenzaProdotto: estraiScadenzaProdotto(testo),
+scadenzaProdotto:
+estraiScadenzaProdotto(testo),
 
 
-note: estraiNote(testo),
+note:
+estraiNote(testo)
 
 };
+
+
+
+/* =========================
+   CONTROLLO CATEGORIA
+========================= */
+
+if(!dati.categoria){
+
+alert(
+"Non ho riconosciuto la categoria."
+);
+
+return;
+
+}
 
 
 
