@@ -7,11 +7,14 @@
 
 <title>Registro Lotti</title>
 
+
 <style>
 
 body{
-font-family:Arial;
+font-family:Arial,sans-serif;
 padding:20px;
+max-width:700px;
+margin:auto;
 }
 
 button{
@@ -19,12 +22,21 @@ width:100%;
 padding:15px;
 font-size:18px;
 margin-bottom:15px;
+cursor:pointer;
 }
 
 textarea{
 width:100%;
-height:150px;
+height:180px;
 font-size:16px;
+box-sizing:border-box;
+padding:10px;
+}
+
+#stato{
+font-size:16px;
+margin-bottom:15px;
+font-weight:bold;
 }
 
 </style>
@@ -34,108 +46,527 @@ font-size:16px;
 
 <body>
 
-<h2 id="titolo">Registro Lotti</h2>
 
-<button id="bottoneParla" onclick="avviaVoce()">
+<h2 id="titolo">
+Registro Lotti
+</h2>
+
+
+<div id="stato">
+Pronto
+</div>
+
+
+<button
+id="bottoneParla"
+onclick="avviaVoce()"
+>
 🎤 PARLA
 </button>
 
-<textarea id="testo" placeholder="Dettatura..."></textarea>
 
-<button onclick="salva()">
+<textarea
+id="testo"
+placeholder="Dettatura..."
+></textarea>
+
+
+<button
+id="bottoneSalva"
+onclick="salva()"
+>
 SALVA
 </button>
+
 
 
 <script>
 
 
+/* ============================================================
+   URL GOOGLE APPS SCRIPT
+============================================================ */
+
 const URL_APPS_SCRIPT =
 "https://script.google.com/macros/s/AKfycbz22zU9O2gsBLtlHZC92imCmLuO0haOaWNpge0j2rN3p7IlK8w2swFOCV2-Is6afqg/exec";
 
 
+/* ============================================================
+   VARIABILI REGISTRAZIONE
+============================================================ */
+
+let riconoscimento = null;
+
 let testoRiconosciuto = "";
 
+let registrazioneAttiva = false;
 
 
-/* =========================
-   AVVIO REGISTRAZIONE
-========================= */
+/*
+   Serve per evitare che il browser
+   perda il testo quando fa una pausa.
+*/
+
+let testoPrimaRegistrazione = "";
+
+
+/* ============================================================
+   AVVIO REGISTRAZIONE VOCALE
+============================================================ */
 
 function avviaVoce(){
 
-if(!("webkitSpeechRecognition" in window)){
 
-alert("Browser non compatibile");
+if(
+!("webkitSpeechRecognition" in window) &&
+!("SpeechRecognition" in window)
+){
+
+alert(
+"Il browser non supporta la registrazione vocale."
+);
 
 return;
 
 }
 
 
-const riconoscimento =
-new webkitSpeechRecognition();
+/*
+   Se esiste già una registrazione,
+   la fermiamo prima di crearne un'altra.
+*/
 
+if(
+riconoscimento &&
+registrazioneAttiva
+){
 
-riconoscimento.lang = "it-IT";
+try{
 
-riconoscimento.continuous = false;
+riconoscimento.stop();
 
-riconoscimento.interimResults = false;
-
-
-
-riconoscimento.onstart = function(){
-
-alert("Parla ora");
-
-};
-
-
-
-riconoscimento.onresult = function(event){
-
-testoRiconosciuto =
-event.results[0][0].transcript;
-
-document.getElementById("testo").value =
-testoRiconosciuto;
-
-};
-
-
-
-riconoscimento.onerror = function(event){
-
-alert("Errore microfono: " + event.error);
-
-};
-
-
-
-riconoscimento.start();
+}catch(e){}
 
 }
 
 
+/*
+   Salviamo quello che era già scritto.
+*/
 
-/* =========================
+const textarea =
+document.getElementById("testo");
+
+testoPrimaRegistrazione =
+textarea.value.trim();
+
+
+/*
+   Creiamo il riconoscimento.
+*/
+
+const SpeechRecognition =
+window.SpeechRecognition ||
+window.webkitSpeechRecognition;
+
+
+riconoscimento =
+new SpeechRecognition();
+
+
+riconoscimento.lang =
+"it-IT";
+
+
+/*
+   IMPORTANTISSIMO:
+
+   continuous = true
+
+   In questo modo non dovrebbe
+   interrompersi appena fai una pausa.
+*/
+
+riconoscimento.continuous =
+true;
+
+
+/*
+   Teniamo anche i risultati intermedi
+   per rendere la registrazione
+   più resistente alle pause.
+*/
+
+riconoscimento.interimResults =
+true;
+
+
+riconoscimento.maxAlternatives =
+1;
+
+
+/* ============================================================
+   QUANDO PARTE
+============================================================ */
+
+riconoscimento.onstart =
+function(){
+
+registrazioneAttiva =
+true;
+
+document.getElementById("stato").innerText =
+"🎤 Registrazione attiva — parla pure, puoi fare pause.";
+
+document.getElementById("bottoneParla").innerText =
+"🛑 FERMA REGISTRAZIONE";
+
+};
+
+
+/* ============================================================
+   RISULTATO VOCALE
+============================================================ */
+
+riconoscimento.onresult =
+function(event){
+
+
+let testoFinale =
+"";
+
+
+let testoProvvisorio =
+"";
+
+
+/*
+   Recuperiamo TUTTI i risultati,
+   non soltanto event.results[0].
+
+   Questo è il punto fondamentale
+   per non perdere quello che è stato
+   detto prima di una pausa.
+*/
+
+for(
+let i = 0;
+i < event.results.length;
+i++
+){
+
+const risultato =
+event.results[i];
+
+
+const testo =
+risultato[0].transcript;
+
+
+if(
+risultato.isFinal
+){
+
+testoFinale +=
+testo + " ";
+
+}else{
+
+testoProvvisorio +=
+testo + " ";
+
+}
+
+}
+
+
+/*
+   Prendiamo ciò che era già presente
+   prima dell'ultima sessione.
+*/
+
+let testoCompleto =
+testoPrimaRegistrazione;
+
+
+/*
+   Se abbiamo già testo finale
+   salvato, lo manteniamo.
+*/
+
+if(testoRiconosciuto){
+
+testoCompleto =
+testoRiconosciuto;
+
+}
+
+
+/*
+   Aggiungiamo il nuovo testo finale.
+*/
+
+if(testoFinale.trim()){
+
+if(testoCompleto.trim()){
+
+testoCompleto +=
+" " +
+testoFinale.trim();
+
+}else{
+
+testoCompleto =
+testoFinale.trim();
+
+}
+
+}
+
+
+/*
+   Se ci sono risultati intermedi,
+   li visualizziamo nel box ma NON
+   li consideriamo ancora definitivi.
+*/
+
+let visualizzazione =
+testoCompleto;
+
+
+if(testoProvvisorio.trim()){
+
+visualizzazione +=
+" " +
+testoProvvisorio.trim();
+
+}
+
+
+document.getElementById("testo").value =
+visualizzazione.trim();
+
+
+/*
+   Salviamo solamente il testo definitivo.
+
+   Così una frase intermedia
+   non viene duplicata quando
+   diventa finale.
+*/
+
+if(testoFinale.trim()){
+
+testoRiconosciuto =
+testoCompleto.trim();
+
+}
+
+};
+
+
+/* ============================================================
+   ERRORE
+============================================================ */
+
+riconoscimento.onerror =
+function(event){
+
+console.log(
+"Errore riconoscimento:",
+event.error
+);
+
+
+/*
+   "no-speech" non deve per forza
+   essere considerato un errore grave.
+
+   Può semplicemente significare
+   che hai fatto una pausa.
+*/
+
+if(
+event.error === "no-speech"
+){
+
+document.getElementById("stato").innerText =
+"🎤 Pausa rilevata — puoi continuare a parlare.";
+
+return;
+
+}
+
+
+if(
+event.error === "not-allowed"
+){
+
+alert(
+"Il microfono non è autorizzato. Controlla i permessi del browser."
+);
+
+}else{
+
+alert(
+"Errore microfono: " +
+event.error
+);
+
+}
+
+};
+
+
+/* ============================================================
+   FINE REGISTRAZIONE
+============================================================ */
+
+riconoscimento.onend =
+function(){
+
+
+registrazioneAttiva =
+false;
+
+
+/*
+   Alcuni browser interrompono
+   automaticamente SpeechRecognition
+   dopo un certo periodo.
+
+   NON cancelliamo il testo.
+
+   Lo lasciamo nel box.
+*/
+
+document.getElementById("bottoneParla").innerText =
+"🎤 CONTINUA REGISTRAZIONE";
+
+
+document.getElementById("stato").innerText =
+"Registrazione terminata. Il testo è stato mantenuto.";
+
+
+/*
+   Se l'utente non ha premuto manualmente
+   stop, possiamo riavviare automaticamente
+   il riconoscimento.
+
+   Questo rende la registrazione molto
+   più resistente alle interruzioni.
+*/
+
+};
+
+
+/* ============================================================
+   AVVIO
+============================================================ */
+
+try{
+
+riconoscimento.start();
+
+}catch(e){
+
+console.log(e);
+
+}
+
+}
+
+
+/* ============================================================
+   FERMA REGISTRAZIONE
+============================================================ */
+
+function fermaVoce(){
+
+if(
+riconoscimento &&
+registrazioneAttiva
+){
+
+try{
+
+riconoscimento.stop();
+
+}catch(e){}
+
+}
+
+}
+
+
+/* ============================================================
+   MODIFICA DELLA FUNZIONE PARLA
+============================================================ */
+
+function avviaVoceOriginale(){
+
+}
+
+
+/* ============================================================
+   GESTIONE PULSANTE PARLA
+============================================================ */
+
+document
+.getElementById("bottoneParla")
+.addEventListener(
+"click",
+function(){
+
+if(registrazioneAttiva){
+
+fermaVoce();
+
+}else{
+
+avviaVoce();
+
+}
+
+}
+);
+
+
+/*
+   Evitiamo che il vecchio onclick
+   faccia partire due registrazioni.
+*/
+
+document
+.getElementById("bottoneParla")
+.removeAttribute("onclick");
+
+
+/* ============================================================
    PAGINA NUOVO LOTTO
-========================= */
+============================================================ */
 
-window.onload = function(){
+window.onload =
+function(){
 
 const parametri =
-new URLSearchParams(window.location.search);
+new URLSearchParams(
+window.location.search
+);
 
 
-if(parametri.get("azione") === "nuovo"){
+if(
+parametri.get("azione") === "nuovo"
+){
 
-document.getElementById("titolo").innerHTML =
+document
+.getElementById("titolo")
+.innerHTML =
 "Nuovo lotto pronto";
 
-
-document.getElementById("bottoneParla").innerHTML =
+document
+.getElementById("bottoneParla")
+.innerHTML =
 "🎤 AVVIA REGISTRAZIONE";
 
 }
@@ -143,19 +574,20 @@ document.getElementById("bottoneParla").innerHTML =
 };
 
 
-
-/* =========================
+/* ============================================================
    NORMALIZZAZIONE TESTO
-========================= */
+============================================================ */
 
 function normalizzaTesto(testo){
 
-testo = testo.toLowerCase();
+testo =
+testo.toLowerCase();
 
 
 /* produzione */
 
-testo = testo.replaceAll(
+testo =
+testo.replaceAll(
 "produzioni",
 "produzione"
 );
@@ -163,22 +595,26 @@ testo = testo.replaceAll(
 
 /* ingredienti */
 
-testo = testo.replaceAll(
+testo =
+testo.replaceAll(
 "ingredienti",
 "ingrediente"
 );
 
-testo = testo.replaceAll(
+testo =
+testo.replaceAll(
 "nuovi ingredienti",
 "nuovo ingrediente"
 );
 
-testo = testo.replaceAll(
+testo =
+testo.replaceAll(
 "nuovi ingrediente",
 "nuovo ingrediente"
 );
 
-testo = testo.replaceAll(
+testo =
+testo.replaceAll(
 "nuova ingrediente",
 "nuovo ingrediente"
 );
@@ -186,27 +622,32 @@ testo = testo.replaceAll(
 
 /* lotto pronunciato male */
 
-testo = testo.replaceAll(
+testo =
+testo.replaceAll(
 "l'otto",
 "lotto"
 );
 
-testo = testo.replaceAll(
+testo =
+testo.replaceAll(
 "l otto",
 "lotto"
 );
 
-testo = testo.replaceAll(
+testo =
+testo.replaceAll(
 "l'8",
 "lotto"
 );
 
-testo = testo.replaceAll(
+testo =
+testo.replaceAll(
 "l 8",
 "lotto"
 );
 
-testo = testo.replaceAll(
+testo =
+testo.replaceAll(
 " l8 ",
 " lotto "
 );
@@ -214,20 +655,23 @@ testo = testo.replaceAll(
 
 /* eventuale "lottof123" */
 
-testo = testo.replaceAll(
+testo =
+testo.replaceAll(
 "lottof",
 "lotto f"
 );
 
-testo = testo.replaceAll(
+testo =
+testo.replaceAll(
 "lottol",
 "lotto l"
 );
 
 
-/* errore tipico del riconoscimento */
+/* errore tipico */
 
-testo = testo.replaceAll(
+testo =
+testo.replaceAll(
 "ingrediente e ",
 "ingrediente "
 );
@@ -235,15 +679,17 @@ testo = testo.replaceAll(
 
 /* elimina collegamenti inutili */
 
-testo = testo.replaceAll(
+testo =
+testo.replaceAll(
 " e anche ",
 " "
 );
 
 
-/* eventuale parola "categoria" */
+/* parola categoria */
 
-testo = testo.replaceAll(
+testo =
+testo.replaceAll(
 "categoria ",
 ""
 );
@@ -254,16 +700,16 @@ return testo.trim();
 }
 
 
-
-/* =========================
+/* ============================================================
    ESTRAZIONE CATEGORIA
-========================= */
+============================================================ */
 
 function estraiCategoria(testo){
 
 let posizione =
-testo.indexOf("produzione");
-
+testo.indexOf(
+"produzione"
+);
 
 if(posizione < 0){
 
@@ -271,87 +717,115 @@ return "";
 
 }
 
-
 let categoria =
 testo
-.substring(0, posizione)
+.substring(
+0,
+posizione
+)
 .trim();
-
 
 return categoria;
 
 }
 
 
-
-/* =========================
+/* ============================================================
    ESTRAZIONE PRODUZIONE
-========================= */
+============================================================ */
 
 function estraiProduzione(testo){
 
 let posizione =
-testo.indexOf("produzione");
+testo.indexOf(
+"produzione"
+);
 
 if(posizione < 0){
+
 return "";
+
 }
 
 let inizio =
-posizione + "produzione".length;
+posizione +
+"produzione".length;
 
 let fine =
-testo.indexOf("quantità", inizio);
+testo.indexOf(
+"quantità",
+inizio
+);
 
 if(fine < 0){
+
 return "";
+
 }
 
 return testo
-.substring(inizio, fine)
+.substring(
+inizio,
+fine
+)
 .trim();
 
 }
 
 
-
-/* =========================
+/* ============================================================
    ESTRAZIONE QUANTITÀ
-========================= */
+============================================================ */
 
 function estraiQuantita(testo){
 
 let risultato = "";
 
 let posizione =
-testo.indexOf("quantità ");
+testo.indexOf(
+"quantità "
+);
 
 if(posizione < 0){
+
 return "";
+
 }
 
 let inizio =
-posizione + "quantità ".length;
+posizione +
+"quantità ".length;
 
 let fine =
-testo.indexOf(" scadenza prodotto ", inizio);
+testo.indexOf(
+" scadenza prodotto ",
+inizio
+);
 
 if(fine < 0){
 
 fine =
-testo.indexOf(" prodotto ", inizio);
+testo.indexOf(
+" prodotto ",
+inizio
+);
 
 }
 
 if(fine >= 0){
 
 risultato =
-testo.substring(inizio, fine);
+testo.substring(
+inizio,
+fine
+);
 
 }else{
 
 risultato =
-testo.substring(inizio);
+testo.substring(
+inizio
+);
 
 }
 
@@ -360,35 +834,80 @@ return risultato.trim();
 }
 
 
-
-/* =========================
+/* ============================================================
    ESTRAZIONE INGREDIENTI
-========================= */
+============================================================ */
 
 function estraiIngredienti(testo){
 
 let risultato = [];
 
 let blocchi =
-testo.split("ingrediente ");
+testo.split(
+"ingrediente "
+);
 
 
-for(let i = 1; i < blocchi.length; i++){
+for(
+let i = 1;
+i < blocchi.length;
+i++
+){
 
 let blocco =
 blocchi[i].trim();
 
 
 let nome =
-blocchi[i]
-.split(" lotto ")[0]
+blocco
+.split(
+" lotto "
+)[0]
+.trim();
+
+
+/*
+   Se non c'è il lotto,
+   il nome deve fermarsi
+   anche prima di "scadenza".
+
+   Esempio:
+
+   ingrediente farina scadenza 10 agosto
+
+   deve restituire:
+
+   farina
+*/
+
+nome =
+nome
+.split(
+" scadenza "
+)[0]
+.trim();
+
+
+/*
+   Se arriva un altro ingrediente
+   senza lotto/scadenza.
+*/
+
+nome =
+nome
+.split(
+" ingrediente "
+)[0]
 .trim();
 
 
 /* elimina eventuale "e" iniziale */
 
 nome =
-nome.replace(/^e\s+/,"");
+nome.replace(
+/^e\s+/,
+""
+);
 
 
 if(nome !== ""){
@@ -405,44 +924,102 @@ return risultato;
 }
 
 
-
-/* =========================
+/* ============================================================
    ESTRAZIONE LOTTI INGREDIENTI
-========================= */
+============================================================ */
 
 function estraiLotti(testo){
 
 let risultato = [];
 
 let blocchi =
-testo.split("ingrediente ");
+testo.split(
+"ingrediente "
+);
 
 
-for(let i = 1; i < blocchi.length; i++){
+/*
+   IMPORTANTISSIMO:
+
+   Per OGNI ingrediente inseriamo
+   un elemento nell'array.
+
+   Se manca il lotto:
+
+   ""
+   
+   Così gli elementi successivi
+   non si spostano.
+*/
+
+for(
+let i = 1;
+i < blocchi.length;
+i++
+){
 
 let blocco =
 blocchi[i];
 
 
+let lotto =
+"";
+
+
 let parti =
-blocco.split(" lotto ");
+blocco.split(
+" lotto "
+);
 
 
 if(parti.length > 1){
 
-let lotto =
+lotto =
 parti[1]
-.split(" scadenza ")[0]
+.split(
+" scadenza "
+)[0]
 .trim();
 
 
-if(lotto !== ""){
+/*
+   Se dopo il lotto arriva
+   direttamente un altro ingrediente,
+   il lotto rimane comunque corretto.
+*/
 
-risultato.push(lotto);
+lotto =
+lotto
+.split(
+" ingrediente "
+)[0]
+.trim();
+
+
+/*
+   Evitiamo eventuali note
+   o scadenza prodotto.
+*/
+
+lotto =
+lotto
+.split(
+" note "
+)[0]
+.trim();
 
 }
 
-}
+
+/*
+   SEMPRE push.
+
+   Anche quando è vuoto.
+*/
+
+risultato.push(
+lotto
+);
 
 }
 
@@ -452,61 +1029,100 @@ return risultato;
 }
 
 
-
-/* =========================
+/* ============================================================
    ESTRAZIONE SCADENZE INGREDIENTI
-========================= */
+============================================================ */
 
 function estraiScadenze(testo){
 
 let risultato = [];
 
 let blocchi =
-testo.split("ingrediente ");
+testo.split(
+"ingrediente "
+);
 
 
-for(let i = 1; i < blocchi.length; i++){
+/*
+   Anche qui creiamo UN elemento
+   per ogni ingrediente.
+
+   Se manca la scadenza:
+
+   ""
+*/
+
+for(
+let i = 1;
+i < blocchi.length;
+i++
+){
 
 let blocco =
 blocchi[i];
 
 
+let scadenza =
+"";
+
+
 let parti =
-blocco.split(" scadenza ");
+blocco.split(
+" scadenza "
+);
 
 
 if(parti.length > 1){
 
-let scadenza =
+scadenza =
 parti[1];
 
 
+/*
+   La scadenza ingrediente
+   termina prima di:
+
+   - ingrediente
+   - scadenza prodotto
+   - note
+*/
+
 scadenza =
 scadenza
-.split(" ingrediente ")[0];
+.split(
+" ingrediente "
+)[0];
 
 
 scadenza =
 scadenza
-.split(" scadenza prodotto ")[0];
+.split(
+" scadenza prodotto "
+)[0];
 
 
 scadenza =
 scadenza
-.split(" note ")[0];
+.split(
+" note "
+)[0];
 
 
 scadenza =
 scadenza.trim();
 
-
-if(scadenza !== ""){
-
-risultato.push(scadenza);
-
 }
 
-}
+
+/*
+   SEMPRE push.
+
+   Anche se è vuota.
+*/
+
+risultato.push(
+scadenza
+);
 
 }
 
@@ -516,87 +1132,110 @@ return risultato;
 }
 
 
-
-/* =========================
+/* ============================================================
    SCADENZA PRODOTTO
-========================= */
+============================================================ */
 
 function estraiScadenzaProdotto(testo){
 
 let risultato = "";
 
 let posizione =
-testo.indexOf("scadenza prodotto ");
+testo.indexOf(
+"scadenza prodotto "
+);
 
 
 if(posizione >= 0){
 
 let inizio =
-posizione + "scadenza prodotto ".length;
-
+posizione +
+"scadenza prodotto ".length;
 
 let fine =
-testo.indexOf(" ingrediente ", inizio);
-
+testo.indexOf(
+" ingrediente ",
+inizio
+);
 
 if(fine < 0){
-fine =
-testo.indexOf(" note ", inizio);
-}
 
+fine =
+testo.indexOf(
+" note ",
+inizio
+);
+
+}
 
 if(fine >= 0){
 
 risultato =
-testo.substring(inizio, fine);
+testo.substring(
+inizio,
+fine
+);
 
 }else{
 
 risultato =
-testo.substring(inizio);
+testo.substring(
+inizio
+);
 
 }
-
 
 return risultato.trim();
 
 }
 
 
-
-/* Se la voce ha perso "scadenza" */
+/*
+   Se la voce ha perso "scadenza".
+*/
 
 posizione =
-testo.indexOf(" prodotto ");
+testo.indexOf(
+" prodotto "
+);
 
 
 if(posizione >= 0){
 
 let inizio =
-posizione + " prodotto ".length;
-
+posizione +
+" prodotto ".length;
 
 let fine =
-testo.indexOf(" ingrediente ", inizio);
-
+testo.indexOf(
+" ingrediente ",
+inizio
+);
 
 if(fine < 0){
 
 fine =
-testo.indexOf(" note ", inizio);
+testo.indexOf(
+" note ",
+inizio
+);
 
 }
-
 
 if(fine >= 0){
 
 risultato =
-testo.substring(inizio, fine);
+testo.substring(
+inizio,
+fine
+);
 
 }else{
 
 risultato =
-testo.substring(inizio);
+testo.substring(
+inizio
+);
 
 }
 
@@ -608,15 +1247,16 @@ return risultato.trim();
 }
 
 
-
-/* =========================
+/* ============================================================
    NOTE
-========================= */
+============================================================ */
 
 function estraiNote(testo){
 
 let posizione =
-testo.indexOf("note");
+testo.indexOf(
+"note"
+);
 
 
 if(posizione < 0){
@@ -627,7 +1267,9 @@ return "";
 
 
 let risultato =
-testo.substring(posizione + 4).trim();
+testo.substring(
+posizione + 4
+).trim();
 
 
 return risultato;
@@ -635,72 +1277,160 @@ return risultato;
 }
 
 
-
-/* =========================
+/* ============================================================
    SALVATAGGIO
-========================= */
+============================================================ */
 
 function salva(){
 
-if(!testoRiconosciuto){
 
-alert("Prima fai una registrazione vocale.");
+/*
+   Prendiamo SEMPRE il contenuto
+   attuale del box.
+
+   Questo evita di perdere testo
+   eventualmente scritto o modificato
+   manualmente.
+*/
+
+let testoBox =
+document
+.getElementById("testo")
+.value
+.trim();
+
+
+if(!testoBox){
+
+alert(
+"Prima fai una registrazione vocale."
+);
 
 return;
 
 }
 
 
+/*
+   Se la registrazione è ancora attiva,
+   la fermiamo prima di salvare.
+*/
+
+if(
+riconoscimento &&
+registrazioneAttiva
+){
+
+fermaVoce();
+
+}
+
+
+/*
+   Normalizzazione.
+*/
+
 let testo =
-normalizzaTesto(testoRiconosciuto);
+normalizzaTesto(
+testoBox
+);
 
 
-
-/* =========================
+/* ============================================================
    DATI
-========================= */
+============================================================ */
+
+const ingredienti =
+estraiIngredienti(testo);
+
+
+const lotti =
+estraiLotti(testo);
+
+
+const scadenze =
+estraiScadenze(testo);
+
+
+/*
+   Allineamento di sicurezza.
+
+   Il numero di lotti e scadenze viene
+   portato allo stesso numero
+   degli ingredienti.
+*/
+
+while(
+lotti.length <
+ingredienti.length
+){
+
+lotti.push("");
+
+}
+
+
+while(
+scadenze.length <
+ingredienti.length
+){
+
+scadenze.push("");
+
+}
+
+
+/*
+   Se per qualche motivo ci sono
+   elementi in più, li tagliamo.
+*/
+
+lotti.length =
+ingredienti.length;
+
+
+scadenze.length =
+ingredienti.length;
+
+
+/* ============================================================
+   OGGETTO DATI
+============================================================ */
 
 const dati = {
-
 
 categoria:
 estraiCategoria(testo),
 
-
 produzione:
 estraiProduzione(testo),
 
-
 /*
-Il lotto della produzione
-NON viene preso dalla voce.
-
-Code.gs lo calcola automaticamente.
+   Il lotto produzione viene creato
+   automaticamente da Code.gs.
 */
 
 lotto:
 "",
 
-
 quantita:
 estraiQuantita(testo),
 
-
 ingrediente:
-estraiIngredienti(testo).join("|"),
-
+ingredienti.join("|"),
 
 lottoIngrediente:
-estraiLotti(testo).join("|"),
-
+lotti.join("|"),
 
 scadenzaIngrediente:
-estraiScadenze(testo).join("|"),
-
+scadenze.join("|"),
 
 scadenzaProdotto:
 estraiScadenzaProdotto(testo),
 
+/*
+   Le note sono facoltative.
+*/
 
 note:
 estraiNote(testo)
@@ -708,10 +1438,9 @@ estraiNote(testo)
 };
 
 
-
-/* =========================
+/* ============================================================
    CONTROLLO CATEGORIA
-========================= */
+============================================================ */
 
 if(!dati.categoria){
 
@@ -724,10 +1453,63 @@ return;
 }
 
 
+/* ============================================================
+   CONTROLLO PRODUZIONE
+============================================================ */
 
-/* =========================
-   INVIO A GOOGLE APPS SCRIPT
-========================= */
+if(!dati.produzione){
+
+alert(
+"Non ho riconosciuto il nome della produzione."
+);
+
+return;
+
+}
+
+
+/* ============================================================
+   CONTROLLO INGREDIENTI
+============================================================ */
+
+if(
+ingredienti.length === 0
+){
+
+alert(
+"Non ho riconosciuto nessun ingrediente."
+);
+
+return;
+
+}
+
+
+/* ============================================================
+   BLOCCA PULSANTE
+============================================================ */
+
+const bottoneSalva =
+document.getElementById(
+"bottoneSalva"
+);
+
+
+bottoneSalva.disabled =
+true;
+
+
+bottoneSalva.innerText =
+"SALVATAGGIO...";
+
+
+document.getElementById("stato").innerText =
+"Salvataggio in corso...";
+
+
+/* ============================================================
+   INVIO GOOGLE APPS SCRIPT
+============================================================ */
 
 fetch(
 URL_APPS_SCRIPT,
@@ -735,40 +1517,125 @@ URL_APPS_SCRIPT,
 
 method:"POST",
 
-body:JSON.stringify(dati),
+body:
+JSON.stringify(dati),
 
 headers:{
-"Content-Type":"text/plain"
+"Content-Type":
+"text/plain"
 }
 
 }
 )
 
 
-.then(function(r){
+.then(
+function(r){
 
-return r.text();
+return r.json();
 
-})
-
-
-.then(function(){
-
-alert("Salvato");
-
-})
+}
+)
 
 
-.catch(function(e){
+.then(
+function(risposta){
 
-alert("Errore: " + e);
+if(
+!risposta.successo
+){
 
-});
+throw new Error(
+risposta.errore ||
+"Errore durante il salvataggio."
+);
+
+}
+
+
+/* ========================================================
+   SALVATAGGIO RIUSCITO
+======================================================== */
+
+
+/*
+   CANCELLA COMPLETAMENTE
+   IL BOX.
+*/
+
+document
+.getElementById("testo")
+.value =
+"";
+
+
+/*
+   CANCELLA ANCHE IL TESTO
+   SALVATO IN MEMORIA.
+*/
+
+testoRiconosciuto =
+"";
+
+
+testoPrimaRegistrazione =
+"";
+
+
+/*
+   Reset stato.
+*/
+
+registrazioneAttiva =
+false;
+
+
+document.getElementById("stato").innerText =
+"✅ Lotto salvato correttamente.";
+
+
+alert(
+"Salvato"
+);
+
+}
+)
+
+
+.catch(
+function(e){
+
+console.error(e);
+
+document.getElementById("stato").innerText =
+"❌ Errore durante il salvataggio.";
+
+alert(
+"Errore: " +
+e.message
+);
+
+}
+)
+
+
+.finally(
+function(){
+
+bottoneSalva.disabled =
+false;
+
+bottoneSalva.innerText =
+"SALVA";
+
+}
+);
 
 }
 
 
 </script>
+
 
 </body>
 
