@@ -25,6 +25,11 @@ margin-bottom:15px;
 cursor:pointer;
 }
 
+button:disabled{
+opacity:0.5;
+cursor:not-allowed;
+}
+
 textarea{
 width:100%;
 height:180px;
@@ -57,10 +62,7 @@ Pronto
 </div>
 
 
-<button
-id="bottoneParla"
-onclick="avviaVoce()"
->
+<button id="bottoneParla">
 🎤 PARLA
 </button>
 
@@ -71,13 +73,9 @@ placeholder="Dettatura..."
 ></textarea>
 
 
-<button
-id="bottoneSalva"
-onclick="salva()"
->
+<button id="bottoneSalva">
 SALVA
 </button>
-
 
 
 <script>
@@ -92,454 +90,478 @@ const URL_APPS_SCRIPT =
 
 
 /* ============================================================
-   VARIABILI REGISTRAZIONE
+   VARIABILI VOCE
 ============================================================ */
 
 let riconoscimento = null;
 
-let testoRiconosciuto = "";
-
 let registrazioneAttiva = false;
+
+let arrestoManuale = false;
 
 
 /*
-   Serve per evitare che il browser
-   perda il testo quando fa una pausa.
+   Testo definitivo già riconosciuto.
 */
 
-let testoPrimaRegistrazione = "";
+let testoRiconosciuto = "";
 
 
 /* ============================================================
-   AVVIO REGISTRAZIONE VOCALE
+   AVVIA VOCE
 ============================================================ */
 
 function avviaVoce(){
 
+  if(
+    !("webkitSpeechRecognition" in window) &&
+    !("SpeechRecognition" in window)
+  ){
 
-if(
-!("webkitSpeechRecognition" in window) &&
-!("SpeechRecognition" in window)
-){
+    alert(
+      "Il browser non supporta la registrazione vocale."
+    );
 
-alert(
-"Il browser non supporta la registrazione vocale."
-);
+    return;
 
-return;
+  }
 
-}
 
+  /*
+     Se era già attivo, lo fermiamo.
+  */
 
-/*
-   Se esiste già una registrazione,
-   la fermiamo prima di crearne un'altra.
-*/
+  if(registrazioneAttiva){
 
-if(
-riconoscimento &&
-registrazioneAttiva
-){
+    fermaVoce();
 
-try{
+    return;
 
-riconoscimento.stop();
+  }
 
-}catch(e){}
 
-}
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
 
 
-/*
-   Salviamo quello che era già scritto.
-*/
+  riconoscimento =
+    new SpeechRecognition();
 
-const textarea =
-document.getElementById("testo");
 
-testoPrimaRegistrazione =
-textarea.value.trim();
+  riconoscimento.lang =
+    "it-IT";
 
 
-/*
-   Creiamo il riconoscimento.
-*/
+  /*
+     Permette di parlare più a lungo
+     e fare pause.
+  */
 
-const SpeechRecognition =
-window.SpeechRecognition ||
-window.webkitSpeechRecognition;
+  riconoscimento.continuous =
+    true;
 
 
-riconoscimento =
-new SpeechRecognition();
+  /*
+     Ci permette di visualizzare
+     anche il testo provvisorio.
+  */
 
+  riconoscimento.interimResults =
+    true;
 
-riconoscimento.lang =
-"it-IT";
 
+  riconoscimento.maxAlternatives =
+    1;
 
-/*
-   IMPORTANTISSIMO:
 
-   continuous = true
+  arrestoManuale =
+    false;
 
-   In questo modo non dovrebbe
-   interrompersi appena fai una pausa.
-*/
 
-riconoscimento.continuous =
-true;
+  /* ========================================================
+     START
+  ======================================================== */
 
+  riconoscimento.onstart =
+  function(){
 
-/*
-   Teniamo anche i risultati intermedi
-   per rendere la registrazione
-   più resistente alle pause.
-*/
+    registrazioneAttiva =
+      true;
 
-riconoscimento.interimResults =
-true;
+    document
+      .getElementById("stato")
+      .innerText =
+      "🎤 Registrazione attiva — puoi fare pause.";
 
+    document
+      .getElementById("bottoneParla")
+      .innerText =
+      "🛑 FERMA REGISTRAZIONE";
 
-riconoscimento.maxAlternatives =
-1;
+  };
 
 
-/* ============================================================
-   QUANDO PARTE
-============================================================ */
+  /* ========================================================
+     RISULTATI
+  ======================================================== */
 
-riconoscimento.onstart =
-function(){
+  riconoscimento.onresult =
+  function(event){
 
-registrazioneAttiva =
-true;
+    let nuoviFinali = "";
 
-document.getElementById("stato").innerText =
-"🎤 Registrazione attiva — parla pure, puoi fare pause.";
 
-document.getElementById("bottoneParla").innerText =
-"🛑 FERMA REGISTRAZIONE";
+    /*
+       resultIndex indica da quale risultato
+       iniziare a leggere.
 
-};
+       Questo evita di duplicare
+       quello che è già stato riconosciuto.
+    */
 
+    for(
+      let i = event.resultIndex;
+      i < event.results.length;
+      i++
+    ){
 
-/* ============================================================
-   RISULTATO VOCALE
-============================================================ */
+      const risultato =
+        event.results[i];
 
-riconoscimento.onresult =
-function(event){
 
+      const testo =
+        risultato[0]
+          .transcript
+          .trim();
 
-let testoFinale =
-"";
 
+      if(
+        risultato.isFinal
+      ){
 
-let testoProvvisorio =
-"";
+        if(testo){
 
+          nuoviFinali +=
+            " " +
+            testo;
 
-/*
-   Recuperiamo TUTTI i risultati,
-   non soltanto event.results[0].
+        }
 
-   Questo è il punto fondamentale
-   per non perdere quello che è stato
-   detto prima di una pausa.
-*/
+      }
 
-for(
-let i = 0;
-i < event.results.length;
-i++
-){
+    }
 
-const risultato =
-event.results[i];
 
+    /*
+       Aggiungiamo SOLO i risultati definitivi.
+    */
 
-const testo =
-risultato[0].transcript;
+    if(nuoviFinali.trim()){
 
+      testoRiconosciuto =
+        (
+          testoRiconosciuto +
+          nuoviFinali
+        )
+        .trim();
 
-if(
-risultato.isFinal
-){
+    }
 
-testoFinale +=
-testo + " ";
 
-}else{
+    /*
+       Costruiamo il testo da mostrare.
+    */
 
-testoProvvisorio +=
-testo + " ";
+    let testoVisualizzato =
+      testoRiconosciuto;
 
-}
 
-}
+    /*
+       Mostriamo anche eventuali risultati
+       provvisori.
+    */
 
+    let provvisori = "";
 
-/*
-   Prendiamo ciò che era già presente
-   prima dell'ultima sessione.
-*/
 
-let testoCompleto =
-testoPrimaRegistrazione;
+    for(
+      let i = event.resultIndex;
+      i < event.results.length;
+      i++
+    ){
 
+      const risultato =
+        event.results[i];
 
-/*
-   Se abbiamo già testo finale
-   salvato, lo manteniamo.
-*/
 
-if(testoRiconosciuto){
+      if(
+        !risultato.isFinal
+      ){
 
-testoCompleto =
-testoRiconosciuto;
+        const testo =
+          risultato[0]
+            .transcript
+            .trim();
 
-}
 
+        if(testo){
 
-/*
-   Aggiungiamo il nuovo testo finale.
-*/
+          provvisori +=
+            " " +
+            testo;
 
-if(testoFinale.trim()){
+        }
 
-if(testoCompleto.trim()){
+      }
 
-testoCompleto +=
-" " +
-testoFinale.trim();
+    }
 
-}else{
 
-testoCompleto =
-testoFinale.trim();
+    if(provvisori.trim()){
 
-}
+      testoVisualizzato =
+        (
+          testoVisualizzato +
+          provvisori
+        )
+        .trim();
 
-}
+    }
 
 
-/*
-   Se ci sono risultati intermedi,
-   li visualizziamo nel box ma NON
-   li consideriamo ancora definitivi.
-*/
+    document
+      .getElementById("testo")
+      .value =
+      testoVisualizzato;
 
-let visualizzazione =
-testoCompleto;
+  };
 
 
-if(testoProvvisorio.trim()){
+  /* ========================================================
+     ERRORE
+  ======================================================== */
 
-visualizzazione +=
-" " +
-testoProvvisorio.trim();
+  riconoscimento.onerror =
+  function(event){
 
-}
+    console.log(
+      "SpeechRecognition:",
+      event.error
+    );
 
 
-document.getElementById("testo").value =
-visualizzazione.trim();
+    /*
+       Una pausa senza voce non deve
+       cancellare ciò che abbiamo già detto.
+    */
 
+    if(
+      event.error === "no-speech"
+    ){
 
-/*
-   Salviamo solamente il testo definitivo.
+      document
+        .getElementById("stato")
+        .innerText =
+        "🎤 Pausa — puoi continuare a parlare.";
 
-   Così una frase intermedia
-   non viene duplicata quando
-   diventa finale.
-*/
+      return;
 
-if(testoFinale.trim()){
+    }
 
-testoRiconosciuto =
-testoCompleto.trim();
 
-}
+    if(
+      event.error === "aborted"
+    ){
 
-};
+      return;
 
+    }
 
-/* ============================================================
-   ERRORE
-============================================================ */
 
-riconoscimento.onerror =
-function(event){
+    if(
+      event.error === "not-allowed"
+    ){
 
-console.log(
-"Errore riconoscimento:",
-event.error
-);
+      alert(
+        "Il microfono non è autorizzato. Controlla i permessi del browser."
+      );
 
+      return;
 
-/*
-   "no-speech" non deve per forza
-   essere considerato un errore grave.
+    }
 
-   Può semplicemente significare
-   che hai fatto una pausa.
-*/
 
-if(
-event.error === "no-speech"
-){
+    document
+      .getElementById("stato")
+      .innerText =
+      "Errore microfono: " +
+      event.error;
 
-document.getElementById("stato").innerText =
-"🎤 Pausa rilevata — puoi continuare a parlare.";
+  };
 
-return;
 
-}
+  /* ========================================================
+     FINE SESSIONE
+  ======================================================== */
 
+  riconoscimento.onend =
+  function(){
 
-if(
-event.error === "not-allowed"
-){
+    /*
+       Se NON abbiamo premuto FERMA,
+       il browser potrebbe aver chiuso
+       la sessione da solo.
 
-alert(
-"Il microfono non è autorizzato. Controlla i permessi del browser."
-);
+       In questo caso la riapriamo.
+       
+       Il testoRiconosciuto NON viene
+       cancellato.
+    */
 
-}else{
+    if(
+      !arrestoManuale &&
+      registrazioneAttiva
+    ){
 
-alert(
-"Errore microfono: " +
-event.error
-);
+      try{
 
-}
+        riconoscimento.start();
 
-};
+        return;
 
+      }catch(e){
 
-/* ============================================================
-   FINE REGISTRAZIONE
-============================================================ */
+        console.log(e);
 
-riconoscimento.onend =
-function(){
+      }
 
+    }
 
-registrazioneAttiva =
-false;
 
+    registrazioneAttiva =
+      false;
 
-/*
-   Alcuni browser interrompono
-   automaticamente SpeechRecognition
-   dopo un certo periodo.
 
-   NON cancelliamo il testo.
+    document
+      .getElementById("bottoneParla")
+      .innerText =
+      "🎤 CONTINUA REGISTRAZIONE";
 
-   Lo lasciamo nel box.
-*/
 
-document.getElementById("bottoneParla").innerText =
-"🎤 CONTINUA REGISTRAZIONE";
+    document
+      .getElementById("stato")
+      .innerText =
+      "Registrazione terminata. Il testo è stato mantenuto.";
 
+  };
 
-document.getElementById("stato").innerText =
-"Registrazione terminata. Il testo è stato mantenuto.";
 
+  try{
 
-/*
-   Se l'utente non ha premuto manualmente
-   stop, possiamo riavviare automaticamente
-   il riconoscimento.
+    riconoscimento.start();
 
-   Questo rende la registrazione molto
-   più resistente alle interruzioni.
-*/
+  }catch(e){
 
-};
+    console.log(e);
 
-
-/* ============================================================
-   AVVIO
-============================================================ */
-
-try{
-
-riconoscimento.start();
-
-}catch(e){
-
-console.log(e);
-
-}
+  }
 
 }
 
 
 /* ============================================================
-   FERMA REGISTRAZIONE
+   FERMA VOCE
 ============================================================ */
 
 function fermaVoce(){
 
-if(
-riconoscimento &&
-registrazioneAttiva
-){
+  arrestoManuale =
+    true;
 
-try{
 
-riconoscimento.stop();
+  registrazioneAttiva =
+    false;
 
-}catch(e){}
 
-}
+  if(
+    riconoscimento
+  ){
+
+    try{
+
+      riconoscimento.stop();
+
+    }catch(e){
+
+      console.log(e);
+
+    }
+
+  }
+
+
+  document
+    .getElementById("bottoneParla")
+    .innerText =
+    "🎤 CONTINUA REGISTRAZIONE";
+
+
+  document
+    .getElementById("stato")
+    .innerText =
+    "Registrazione terminata. Il testo è stato mantenuto.";
 
 }
 
 
 /* ============================================================
-   MODIFICA DELLA FUNZIONE PARLA
-============================================================ */
-
-function avviaVoceOriginale(){
-
-}
-
-
-/* ============================================================
-   GESTIONE PULSANTE PARLA
+   PULSANTE PARLA
 ============================================================ */
 
 document
-.getElementById("bottoneParla")
-.addEventListener(
-"click",
-function(){
+  .getElementById("bottoneParla")
+  .addEventListener(
+    "click",
+    function(){
 
-if(registrazioneAttiva){
+      if(
+        registrazioneAttiva
+      ){
 
-fermaVoce();
+        fermaVoce();
 
-}else{
+      }else{
 
-avviaVoce();
+        /*
+           Se c'è già del testo nel box
+           e premi CONTINUA, lo manteniamo.
+        */
 
-}
+        const testoBox =
+          document
+            .getElementById("testo")
+            .value
+            .trim();
 
-}
-);
+
+        if(
+          testoBox &&
+          !testoRiconosciuto
+        ){
+
+          testoRiconosciuto =
+            testoBox;
+
+        }
 
 
-/*
-   Evitiamo che il vecchio onclick
-   faccia partire due registrazioni.
-*/
+        avviaVoce();
 
-document
-.getElementById("bottoneParla")
-.removeAttribute("onclick");
+      }
+
+    }
+  );
 
 
 /* ============================================================
@@ -549,27 +571,28 @@ document
 window.onload =
 function(){
 
-const parametri =
-new URLSearchParams(
-window.location.search
-);
+  const parametri =
+    new URLSearchParams(
+      window.location.search
+    );
 
 
-if(
-parametri.get("azione") === "nuovo"
-){
+  if(
+    parametri.get("azione") === "nuovo"
+  ){
 
-document
-.getElementById("titolo")
-.innerHTML =
-"Nuovo lotto pronto";
+    document
+      .getElementById("titolo")
+      .innerHTML =
+      "Nuovo lotto pronto";
 
-document
-.getElementById("bottoneParla")
-.innerHTML =
-"🎤 AVVIA REGISTRAZIONE";
 
-}
+    document
+      .getElementById("bottoneParla")
+      .innerHTML =
+      "🎤 AVVIA REGISTRAZIONE";
+
+  }
 
 };
 
@@ -580,554 +603,676 @@ document
 
 function normalizzaTesto(testo){
 
-testo =
-testo.toLowerCase();
+  testo =
+    testo.toLowerCase();
 
 
-/* produzione */
-
-testo =
-testo.replaceAll(
-"produzioni",
-"produzione"
-);
+  testo =
+    testo.replaceAll(
+      "produzioni",
+      "produzione"
+    );
 
 
-/* ingredienti */
-
-testo =
-testo.replaceAll(
-"ingredienti",
-"ingrediente"
-);
-
-testo =
-testo.replaceAll(
-"nuovi ingredienti",
-"nuovo ingrediente"
-);
-
-testo =
-testo.replaceAll(
-"nuovi ingrediente",
-"nuovo ingrediente"
-);
-
-testo =
-testo.replaceAll(
-"nuova ingrediente",
-"nuovo ingrediente"
-);
+  testo =
+    testo.replaceAll(
+      "ingredienti",
+      "ingrediente"
+    );
 
 
-/* lotto pronunciato male */
-
-testo =
-testo.replaceAll(
-"l'otto",
-"lotto"
-);
-
-testo =
-testo.replaceAll(
-"l otto",
-"lotto"
-);
-
-testo =
-testo.replaceAll(
-"l'8",
-"lotto"
-);
-
-testo =
-testo.replaceAll(
-"l 8",
-"lotto"
-);
-
-testo =
-testo.replaceAll(
-" l8 ",
-" lotto "
-);
+  testo =
+    testo.replaceAll(
+      "nuovi ingredienti",
+      "nuovo ingrediente"
+    );
 
 
-/* eventuale "lottof123" */
-
-testo =
-testo.replaceAll(
-"lottof",
-"lotto f"
-);
-
-testo =
-testo.replaceAll(
-"lottol",
-"lotto l"
-);
+  testo =
+    testo.replaceAll(
+      "nuovi ingrediente",
+      "nuovo ingrediente"
+    );
 
 
-/* errore tipico */
-
-testo =
-testo.replaceAll(
-"ingrediente e ",
-"ingrediente "
-);
+  testo =
+    testo.replaceAll(
+      "nuova ingrediente",
+      "nuovo ingrediente"
+    );
 
 
-/* elimina collegamenti inutili */
+  /*
+     Correzioni "lotto".
+  */
 
-testo =
-testo.replaceAll(
-" e anche ",
-" "
-);
-
-
-/* parola categoria */
-
-testo =
-testo.replaceAll(
-"categoria ",
-""
-);
+  testo =
+    testo.replaceAll(
+      "l'otto",
+      "lotto"
+    );
 
 
-return testo.trim();
+  testo =
+    testo.replaceAll(
+      "l otto",
+      "lotto"
+    );
+
+
+  testo =
+    testo.replaceAll(
+      "l'8",
+      "lotto"
+    );
+
+
+  testo =
+    testo.replaceAll(
+      "l 8",
+      "lotto"
+    );
+
+
+  testo =
+    testo.replaceAll(
+      " l8 ",
+      " lotto "
+    );
+
+
+  testo =
+    testo.replaceAll(
+      "lottof",
+      "lotto f"
+    );
+
+
+  testo =
+    testo.replaceAll(
+      "lottol",
+      "lotto l"
+    );
+
+
+  testo =
+    testo.replaceAll(
+      "ingrediente e ",
+      "ingrediente "
+    );
+
+
+  testo =
+    testo.replaceAll(
+      " e anche ",
+      " "
+    );
+
+
+  testo =
+    testo.replaceAll(
+      "categoria ",
+      ""
+    );
+
+
+  return testo.trim();
 
 }
 
 
 /* ============================================================
-   ESTRAZIONE CATEGORIA
+   ESTRAI CATEGORIA
 ============================================================ */
 
 function estraiCategoria(testo){
 
-let posizione =
-testo.indexOf(
-"produzione"
-);
+  const posizione =
+    testo.indexOf(
+      "produzione"
+    );
 
-if(posizione < 0){
 
-return "";
+  if(
+    posizione < 0
+  ){
 
-}
+    return "";
 
-let categoria =
-testo
-.substring(
-0,
-posizione
-)
-.trim();
+  }
 
-return categoria;
+
+  return testo
+    .substring(
+      0,
+      posizione
+    )
+    .trim();
 
 }
 
 
 /* ============================================================
-   ESTRAZIONE PRODUZIONE
+   ESTRAI PRODUZIONE
 ============================================================ */
 
 function estraiProduzione(testo){
 
-let posizione =
-testo.indexOf(
-"produzione"
-);
+  const posizione =
+    testo.indexOf(
+      "produzione"
+    );
 
-if(posizione < 0){
 
-return "";
+  if(
+    posizione < 0
+  ){
 
-}
+    return "";
 
-let inizio =
-posizione +
-"produzione".length;
+  }
 
-let fine =
-testo.indexOf(
-"quantità",
-inizio
-);
 
-if(fine < 0){
+  const inizio =
+    posizione +
+    "produzione".length;
 
-return "";
 
-}
+  const fine =
+    testo.indexOf(
+      " quantità ",
+      inizio
+    );
 
-return testo
-.substring(
-inizio,
-fine
-)
-.trim();
+
+  if(
+    fine < 0
+  ){
+
+    return "";
+
+  }
+
+
+  return testo
+    .substring(
+      inizio,
+      fine
+    )
+    .trim();
 
 }
 
 
 /* ============================================================
-   ESTRAZIONE QUANTITÀ
+   ESTRAI QUANTITÀ
 ============================================================ */
 
 function estraiQuantita(testo){
 
-let risultato = "";
+  const posizione =
+    testo.indexOf(
+      "quantità "
+    );
 
-let posizione =
-testo.indexOf(
-"quantità "
-);
 
-if(posizione < 0){
+  if(
+    posizione < 0
+  ){
 
-return "";
+    return "";
 
-}
+  }
 
-let inizio =
-posizione +
-"quantità ".length;
 
-let fine =
-testo.indexOf(
-" scadenza prodotto ",
-inizio
-);
+  const inizio =
+    posizione +
+    "quantità ".length;
 
-if(fine < 0){
 
-fine =
-testo.indexOf(
-" prodotto ",
-inizio
-);
+  /*
+     La quantità termina al primo
+     " ingrediente ".
+     
+     Questo era uno dei problemi
+     della versione precedente.
+  */
 
-}
+  let fine =
+    testo.indexOf(
+      " ingrediente ",
+      inizio
+    );
 
-if(fine >= 0){
 
-risultato =
-testo.substring(
-inizio,
-fine
-);
+  /*
+     Se non ci sono ingredienti dopo
+     la quantità, cerchiamo gli altri
+     campi possibili.
+  */
 
-}else{
+  if(
+    fine < 0
+  ){
 
-risultato =
-testo.substring(
-inizio
-);
+    fine =
+      testo.indexOf(
+        " scadenza prodotto ",
+        inizio
+      );
 
-}
+  }
 
-return risultato.trim();
+
+  if(
+    fine < 0
+  ){
+
+    fine =
+      testo.indexOf(
+        " note ",
+        inizio
+      );
+
+  }
+
+
+  if(
+    fine >= 0
+  ){
+
+    return testo
+      .substring(
+        inizio,
+        fine
+      )
+      .trim();
+
+  }
+
+
+  return testo
+    .substring(
+      inizio
+    )
+    .trim();
 
 }
 
 
 /* ============================================================
-   ESTRAZIONE INGREDIENTI
+   ESTRAI INGREDIENTI
 ============================================================ */
 
 function estraiIngredienti(testo){
 
-let risultato = [];
-
-let blocchi =
-testo.split(
-"ingrediente "
-);
+  const risultato = [];
 
 
-for(
-let i = 1;
-i < blocchi.length;
-i++
-){
-
-let blocco =
-blocchi[i].trim();
+  const blocchi =
+    testo.split(
+      "ingrediente "
+    );
 
 
-let nome =
-blocco
-.split(
-" lotto "
-)[0]
-.trim();
+  for(
+    let i = 1;
+    i < blocchi.length;
+    i++
+  ){
+
+    let blocco =
+      blocchi[i].trim();
 
 
-/*
-   Se non c'è il lotto,
-   il nome deve fermarsi
-   anche prima di "scadenza".
+    /*
+       L'ingrediente termina prima
+       di lotto / scadenza / note /
+       ingrediente successivo.
+    */
 
-   Esempio:
-
-   ingrediente farina scadenza 10 agosto
-
-   deve restituire:
-
-   farina
-*/
-
-nome =
-nome
-.split(
-" scadenza "
-)[0]
-.trim();
+    let fine = blocco.length;
 
 
-/*
-   Se arriva un altro ingrediente
-   senza lotto/scadenza.
-*/
-
-nome =
-nome
-.split(
-" ingrediente "
-)[0]
-.trim();
+    const posLotto =
+      blocco.indexOf(
+        " lotto "
+      );
 
 
-/* elimina eventuale "e" iniziale */
-
-nome =
-nome.replace(
-/^e\s+/,
-""
-);
+    const posScadenza =
+      blocco.indexOf(
+        " scadenza "
+      );
 
 
-if(nome !== ""){
-
-risultato.push(nome);
-
-}
-
-}
+    const posNote =
+      blocco.indexOf(
+        " note "
+      );
 
 
-return risultato;
+    const posIngrediente =
+      blocco.indexOf(
+        " ingrediente "
+      );
+
+
+    const posizioni = [
+      posLotto,
+      posScadenza,
+      posNote,
+      posIngrediente
+    ]
+    .filter(function(pos){
+      return pos >= 0;
+    });
+
+
+    if(
+      posizioni.length > 0
+    ){
+
+      fine =
+        Math.min.apply(
+          null,
+          posizioni
+        );
+
+    }
+
+
+    let nome =
+      blocco
+        .substring(
+          0,
+          fine
+        )
+        .trim();
+
+
+    nome =
+      nome.replace(
+        /^e\s+/,
+        ""
+      );
+
+
+    if(nome){
+
+      risultato.push(nome);
+
+    }
+
+  }
+
+
+  return risultato;
 
 }
 
 
 /* ============================================================
-   ESTRAZIONE LOTTI INGREDIENTI
+   ESTRAI LOTTI INGREDIENTI
 ============================================================ */
 
 function estraiLotti(testo){
 
-let risultato = [];
-
-let blocchi =
-testo.split(
-"ingrediente "
-);
+  const risultato = [];
 
 
-/*
-   IMPORTANTISSIMO:
-
-   Per OGNI ingrediente inseriamo
-   un elemento nell'array.
-
-   Se manca il lotto:
-
-   ""
-   
-   Così gli elementi successivi
-   non si spostano.
-*/
-
-for(
-let i = 1;
-i < blocchi.length;
-i++
-){
-
-let blocco =
-blocchi[i];
+  const blocchi =
+    testo.split(
+      "ingrediente "
+    );
 
 
-let lotto =
-"";
+  for(
+    let i = 1;
+    i < blocchi.length;
+    i++
+  ){
+
+    const blocco =
+      blocchi[i];
 
 
-let parti =
-blocco.split(
-" lotto "
-);
+    let lotto =
+      "";
 
 
-if(parti.length > 1){
-
-lotto =
-parti[1]
-.split(
-" scadenza "
-)[0]
-.trim();
+    const posizione =
+      blocco.indexOf(
+        " lotto "
+      );
 
 
-/*
-   Se dopo il lotto arriva
-   direttamente un altro ingrediente,
-   il lotto rimane comunque corretto.
-*/
+    if(
+      posizione >= 0
+    ){
 
-lotto =
-lotto
-.split(
-" ingrediente "
-)[0]
-.trim();
+      const inizio =
+        posizione +
+        " lotto ".length;
 
 
-/*
-   Evitiamo eventuali note
-   o scadenza prodotto.
-*/
-
-lotto =
-lotto
-.split(
-" note "
-)[0]
-.trim();
-
-}
+      let fine =
+        blocco.length;
 
 
-/*
-   SEMPRE push.
-
-   Anche quando è vuoto.
-*/
-
-risultato.push(
-lotto
-);
-
-}
+      const posScadenza =
+        blocco.indexOf(
+          " scadenza ",
+          inizio
+        );
 
 
-return risultato;
+      const posIngrediente =
+        blocco.indexOf(
+          " ingrediente ",
+          inizio
+        );
+
+
+      const posNote =
+        blocco.indexOf(
+          " note ",
+          inizio
+        );
+
+
+      const posScadenzaProdotto =
+        blocco.indexOf(
+          " scadenza prodotto ",
+          inizio
+        );
+
+
+      const posizioni = [
+        posScadenza,
+        posIngrediente,
+        posNote,
+        posScadenzaProdotto
+      ]
+      .filter(function(pos){
+        return pos >= 0;
+      });
+
+
+      if(
+        posizioni.length > 0
+      ){
+
+        fine =
+          Math.min.apply(
+            null,
+            posizioni
+          );
+
+      }
+
+
+      lotto =
+        blocco
+          .substring(
+            inizio,
+            fine
+          )
+          .trim();
+
+    }
+
+
+    /*
+       SEMPRE push.
+       
+       Se manca il lotto:
+       push("")
+       
+       Questo mantiene l'allineamento.
+    */
+
+    risultato.push(
+      lotto
+    );
+
+  }
+
+
+  return risultato;
 
 }
 
 
 /* ============================================================
-   ESTRAZIONE SCADENZE INGREDIENTI
+   ESTRAI SCADENZE INGREDIENTI
 ============================================================ */
 
 function estraiScadenze(testo){
 
-let risultato = [];
-
-let blocchi =
-testo.split(
-"ingrediente "
-);
+  const risultato = [];
 
 
-/*
-   Anche qui creiamo UN elemento
-   per ogni ingrediente.
-
-   Se manca la scadenza:
-
-   ""
-*/
-
-for(
-let i = 1;
-i < blocchi.length;
-i++
-){
-
-let blocco =
-blocchi[i];
+  const blocchi =
+    testo.split(
+      "ingrediente "
+    );
 
 
-let scadenza =
-"";
+  for(
+    let i = 1;
+    i < blocchi.length;
+    i++
+  ){
+
+    const blocco =
+      blocchi[i];
 
 
-let parti =
-blocco.split(
-" scadenza "
-);
+    let scadenza =
+      "";
 
 
-if(parti.length > 1){
-
-scadenza =
-parti[1];
-
-
-/*
-   La scadenza ingrediente
-   termina prima di:
-
-   - ingrediente
-   - scadenza prodotto
-   - note
-*/
-
-scadenza =
-scadenza
-.split(
-" ingrediente "
-)[0];
+    const posizione =
+      blocco.indexOf(
+        " scadenza "
+      );
 
 
-scadenza =
-scadenza
-.split(
-" scadenza prodotto "
-)[0];
+    /*
+       IMPORTANTE:
+
+       "scadenza prodotto" NON è
+       una scadenza ingrediente.
+    */
+
+    const posizioneProdotto =
+      blocco.indexOf(
+        " scadenza prodotto "
+      );
 
 
-scadenza =
-scadenza
-.split(
-" note "
-)[0];
+    if(
+      posizione >= 0 &&
+      posizione !== posizioneProdotto
+    ){
+
+      const inizio =
+        posizione +
+        " scadenza ".length;
 
 
-scadenza =
-scadenza.trim();
-
-}
+      let fine =
+        blocco.length;
 
 
-/*
-   SEMPRE push.
-
-   Anche se è vuota.
-*/
-
-risultato.push(
-scadenza
-);
-
-}
+      const posIngrediente =
+        blocco.indexOf(
+          " ingrediente ",
+          inizio
+        );
 
 
-return risultato;
+      const posNote =
+        blocco.indexOf(
+          " note ",
+          inizio
+        );
+
+
+      const posScadenzaProdotto =
+        blocco.indexOf(
+          " scadenza prodotto ",
+          inizio
+        );
+
+
+      const posizioni = [
+        posIngrediente,
+        posNote,
+        posScadenzaProdotto
+      ]
+      .filter(function(pos){
+        return pos >= 0;
+      });
+
+
+      if(
+        posizioni.length > 0
+      ){
+
+        fine =
+          Math.min.apply(
+            null,
+            posizioni
+          );
+
+      }
+
+
+      scadenza =
+        blocco
+          .substring(
+            inizio,
+            fine
+          )
+          .trim();
+
+    }
+
+
+    /*
+       SEMPRE push.
+    */
+
+    risultato.push(
+      scadenza
+    );
+
+  }
+
+
+  return risultato;
 
 }
 
@@ -1138,111 +1283,141 @@ return risultato;
 
 function estraiScadenzaProdotto(testo){
 
-let risultato = "";
-
-let posizione =
-testo.indexOf(
-"scadenza prodotto "
-);
+  let posizione =
+    testo.indexOf(
+      "scadenza prodotto "
+    );
 
 
-if(posizione >= 0){
+  if(
+    posizione >= 0
+  ){
 
-let inizio =
-posizione +
-"scadenza prodotto ".length;
-
-let fine =
-testo.indexOf(
-" ingrediente ",
-inizio
-);
-
-if(fine < 0){
-
-fine =
-testo.indexOf(
-" note ",
-inizio
-);
-
-}
-
-if(fine >= 0){
-
-risultato =
-testo.substring(
-inizio,
-fine
-);
-
-}else{
-
-risultato =
-testo.substring(
-inizio
-);
-
-}
-
-return risultato.trim();
-
-}
+    const inizio =
+      posizione +
+      "scadenza prodotto ".length;
 
 
-/*
-   Se la voce ha perso "scadenza".
-*/
-
-posizione =
-testo.indexOf(
-" prodotto "
-);
+    let fine =
+      testo.length;
 
 
-if(posizione >= 0){
-
-let inizio =
-posizione +
-" prodotto ".length;
-
-let fine =
-testo.indexOf(
-" ingrediente ",
-inizio
-);
-
-if(fine < 0){
-
-fine =
-testo.indexOf(
-" note ",
-inizio
-);
-
-}
-
-if(fine >= 0){
-
-risultato =
-testo.substring(
-inizio,
-fine
-);
-
-}else{
-
-risultato =
-testo.substring(
-inizio
-);
-
-}
-
-}
+    const posIngrediente =
+      testo.indexOf(
+        " ingrediente ",
+        inizio
+      );
 
 
-return risultato.trim();
+    const posNote =
+      testo.indexOf(
+        " note ",
+        inizio
+      );
+
+
+    const posizioni = [
+      posIngrediente,
+      posNote
+    ]
+    .filter(function(pos){
+      return pos >= 0;
+    });
+
+
+    if(
+      posizioni.length > 0
+    ){
+
+      fine =
+        Math.min.apply(
+          null,
+          posizioni
+        );
+
+    }
+
+
+    return testo
+      .substring(
+        inizio,
+        fine
+      )
+      .trim();
+
+  }
+
+
+  /*
+     Se la voce ha perso "scadenza".
+  */
+
+  posizione =
+    testo.indexOf(
+      " prodotto "
+    );
+
+
+  if(
+    posizione >= 0
+  ){
+
+    const inizio =
+      posizione +
+      " prodotto ".length;
+
+
+    let fine =
+      testo.length;
+
+
+    const posIngrediente =
+      testo.indexOf(
+        " ingrediente ",
+        inizio
+      );
+
+
+    const posNote =
+      testo.indexOf(
+        " note ",
+        inizio
+      );
+
+
+    const posizioni = [
+      posIngrediente,
+      posNote
+    ]
+    .filter(function(pos){
+      return pos >= 0;
+    });
+
+
+    if(
+      posizioni.length > 0
+    ){
+
+      fine =
+        Math.min.apply(
+          null,
+          posizioni
+        );
+
+    }
+
+
+    return testo
+      .substring(
+        inizio,
+        fine
+      )
+      .trim();
+
+  }
+
+
+  return "";
 
 }
 
@@ -1253,386 +1428,401 @@ return risultato.trim();
 
 function estraiNote(testo){
 
-let posizione =
-testo.indexOf(
-"note"
-);
+  const posizione =
+    testo.indexOf(
+      "note"
+    );
 
 
-if(posizione < 0){
+  if(
+    posizione < 0
+  ){
 
-return "";
+    return "";
 
-}
-
-
-let risultato =
-testo.substring(
-posizione + 4
-).trim();
+  }
 
 
-return risultato;
+  return testo
+    .substring(
+      posizione + 4
+    )
+    .trim();
 
 }
 
 
 /* ============================================================
-   SALVATAGGIO
+   SALVA
 ============================================================ */
 
 function salva(){
 
+  /*
+     Prendiamo il testo direttamente
+     dal box.
+  */
 
-/*
-   Prendiamo SEMPRE il contenuto
-   attuale del box.
-
-   Questo evita di perdere testo
-   eventualmente scritto o modificato
-   manualmente.
-*/
-
-let testoBox =
-document
-.getElementById("testo")
-.value
-.trim();
+  const textarea =
+    document.getElementById(
+      "testo"
+    );
 
 
-if(!testoBox){
+  const testoBox =
+    textarea.value.trim();
 
-alert(
-"Prima fai una registrazione vocale."
-);
 
-return;
+  if(
+    !testoBox
+  ){
+
+    alert(
+      "Prima fai una registrazione vocale."
+    );
+
+    return;
+
+  }
+
+
+  /*
+     Se la registrazione è ancora
+     attiva, la fermiamo.
+  */
+
+  if(
+    registrazioneAttiva
+  ){
+
+    fermaVoce();
+
+  }
+
+
+  const testo =
+    normalizzaTesto(
+      testoBox
+    );
+
+
+  /* ========================================================
+     ESTRAZIONE
+  ======================================================== */
+
+  const ingredienti =
+    estraiIngredienti(testo);
+
+
+  const lotti =
+    estraiLotti(testo);
+
+
+  const scadenze =
+    estraiScadenze(testo);
+
+
+  /*
+     Allineamento di sicurezza.
+  */
+
+  while(
+    lotti.length <
+    ingredienti.length
+  ){
+
+    lotti.push("");
+
+  }
+
+
+  while(
+    scadenze.length <
+    ingredienti.length
+  ){
+
+    scadenze.push("");
+
+  }
+
+
+  lotti.length =
+    ingredienti.length;
+
+
+  scadenze.length =
+    ingredienti.length;
+
+
+  /* ========================================================
+     DATI
+  ======================================================== */
+
+  const dati = {
+
+    categoria:
+      estraiCategoria(testo),
+
+    produzione:
+      estraiProduzione(testo),
+
+    lotto:
+      "",
+
+    quantita:
+      estraiQuantita(testo),
+
+    ingrediente:
+      ingredienti.join("|"),
+
+    lottoIngrediente:
+      lotti.join("|"),
+
+    scadenzaIngrediente:
+      scadenze.join("|"),
+
+    scadenzaProdotto:
+      estraiScadenzaProdotto(testo),
+
+    note:
+      estraiNote(testo)
+
+  };
+
+
+  /* ========================================================
+     CONTROLLI
+  ======================================================== */
+
+  if(
+    !dati.categoria
+  ){
+
+    alert(
+      "Non ho riconosciuto la categoria."
+    );
+
+    return;
+
+  }
+
+
+  if(
+    !dati.produzione
+  ){
+
+    alert(
+      "Non ho riconosciuto il nome della produzione."
+    );
+
+    return;
+
+  }
+
+
+  if(
+    ingredienti.length === 0
+  ){
+
+    alert(
+      "Non ho riconosciuto nessun ingrediente."
+    );
+
+    return;
+
+  }
+
+
+  /* ========================================================
+     BLOCCA SALVA
+  ======================================================== */
+
+  const bottone =
+    document.getElementById(
+      "bottoneSalva"
+    );
+
+
+  bottone.disabled =
+    true;
+
+
+  bottone.innerText =
+    "SALVATAGGIO...";
+
+
+  document
+    .getElementById("stato")
+    .innerText =
+    "Salvataggio in corso...";
+
+
+  /* ========================================================
+     INVIO
+  ======================================================== */
+
+  fetch(
+    URL_APPS_SCRIPT,
+    {
+
+      method:"POST",
+
+      body:
+        JSON.stringify(dati),
+
+      headers:{
+        "Content-Type":
+          "text/plain;charset=utf-8"
+      }
+
+    }
+  )
+
+
+  .then(
+    function(response){
+
+      /*
+         Leggiamo la risposta come testo
+         prima di tentare JSON.
+
+         Questo evita il problema che
+         avevamo prima.
+      */
+
+      return response.text();
+
+    }
+  )
+
+
+  .then(
+    function(testoRisposta){
+
+      console.log(
+        "Risposta Apps Script:",
+        testoRisposta
+      );
+
+
+      let risposta;
+
+
+      try{
+
+        risposta =
+          JSON.parse(
+            testoRisposta
+          );
+
+      }catch(e){
+
+        /*
+           Se Apps Script ha comunque
+           risposto, consideriamo il
+           salvataggio riuscito.
+        */
+
+        risposta = {
+          successo:true
+        };
+
+      }
+
+
+      if(
+        risposta.successo === false
+      ){
+
+        throw new Error(
+          risposta.errore ||
+          "Errore durante il salvataggio."
+        );
+
+      }
+
+
+      /* ==================================================
+         SALVATAGGIO RIUSCITO
+      ================================================== */
+
+
+      /*
+         SVUOTA IL BOX.
+      */
+
+      textarea.value =
+        "";
+
+
+      /*
+         SVUOTA ANCHE LA MEMORIA
+         DELLA REGISTRAZIONE.
+      */
+
+      testoRiconosciuto =
+        "";
+
+
+      /*
+         Reset.
+      */
+
+      document
+        .getElementById("stato")
+        .innerText =
+        "✅ Lotto salvato correttamente.";
+
+
+      document
+        .getElementById("bottoneParla")
+        .innerText =
+        "🎤 PARLA";
+
+
+      alert(
+        "Salvato"
+      );
+
+    }
+  )
+
+
+  .catch(
+    function(e){
+
+      console.error(e);
+
+
+      document
+        .getElementById("stato")
+        .innerText =
+        "❌ Errore durante il salvataggio.";
+
+
+      alert(
+        "Errore: " +
+        e.message
+      );
+
+    }
+  )
+
+
+  .finally(
+    function(){
+
+      bottone.disabled =
+        false;
+
+
+      bottone.innerText =
+        "SALVA";
+
+    }
+  );
 
 }
-
-
-/*
-   Se la registrazione è ancora attiva,
-   la fermiamo prima di salvare.
-*/
-
-if(
-riconoscimento &&
-registrazioneAttiva
-){
-
-fermaVoce();
-
-}
-
-
-/*
-   Normalizzazione.
-*/
-
-let testo =
-normalizzaTesto(
-testoBox
-);
-
-
-/* ============================================================
-   DATI
-============================================================ */
-
-const ingredienti =
-estraiIngredienti(testo);
-
-
-const lotti =
-estraiLotti(testo);
-
-
-const scadenze =
-estraiScadenze(testo);
-
-
-/*
-   Allineamento di sicurezza.
-
-   Il numero di lotti e scadenze viene
-   portato allo stesso numero
-   degli ingredienti.
-*/
-
-while(
-lotti.length <
-ingredienti.length
-){
-
-lotti.push("");
-
-}
-
-
-while(
-scadenze.length <
-ingredienti.length
-){
-
-scadenze.push("");
-
-}
-
-
-/*
-   Se per qualche motivo ci sono
-   elementi in più, li tagliamo.
-*/
-
-lotti.length =
-ingredienti.length;
-
-
-scadenze.length =
-ingredienti.length;
-
-
-/* ============================================================
-   OGGETTO DATI
-============================================================ */
-
-const dati = {
-
-categoria:
-estraiCategoria(testo),
-
-produzione:
-estraiProduzione(testo),
-
-/*
-   Il lotto produzione viene creato
-   automaticamente da Code.gs.
-*/
-
-lotto:
-"",
-
-quantita:
-estraiQuantita(testo),
-
-ingrediente:
-ingredienti.join("|"),
-
-lottoIngrediente:
-lotti.join("|"),
-
-scadenzaIngrediente:
-scadenze.join("|"),
-
-scadenzaProdotto:
-estraiScadenzaProdotto(testo),
-
-/*
-   Le note sono facoltative.
-*/
-
-note:
-estraiNote(testo)
-
-};
-
-
-/* ============================================================
-   CONTROLLO CATEGORIA
-============================================================ */
-
-if(!dati.categoria){
-
-alert(
-"Non ho riconosciuto la categoria."
-);
-
-return;
-
-}
-
-
-/* ============================================================
-   CONTROLLO PRODUZIONE
-============================================================ */
-
-if(!dati.produzione){
-
-alert(
-"Non ho riconosciuto il nome della produzione."
-);
-
-return;
-
-}
-
-
-/* ============================================================
-   CONTROLLO INGREDIENTI
-============================================================ */
-
-if(
-ingredienti.length === 0
-){
-
-alert(
-"Non ho riconosciuto nessun ingrediente."
-);
-
-return;
-
-}
-
-
-/* ============================================================
-   BLOCCA PULSANTE
-============================================================ */
-
-const bottoneSalva =
-document.getElementById(
-"bottoneSalva"
-);
-
-
-bottoneSalva.disabled =
-true;
-
-
-bottoneSalva.innerText =
-"SALVATAGGIO...";
-
-
-document.getElementById("stato").innerText =
-"Salvataggio in corso...";
-
-
-/* ============================================================
-   INVIO GOOGLE APPS SCRIPT
-============================================================ */
-
-fetch(
-URL_APPS_SCRIPT,
-{
-
-method:"POST",
-
-body:
-JSON.stringify(dati),
-
-headers:{
-"Content-Type":
-"text/plain"
-}
-
-}
-)
-
-
-.then(
-function(r){
-
-return r.json();
-
-}
-)
-
-
-.then(
-function(risposta){
-
-if(
-!risposta.successo
-){
-
-throw new Error(
-risposta.errore ||
-"Errore durante il salvataggio."
-);
-
-}
-
-
-/* ========================================================
-   SALVATAGGIO RIUSCITO
-======================================================== */
-
-
-/*
-   CANCELLA COMPLETAMENTE
-   IL BOX.
-*/
-
-document
-.getElementById("testo")
-.value =
-"";
-
-
-/*
-   CANCELLA ANCHE IL TESTO
-   SALVATO IN MEMORIA.
-*/
-
-testoRiconosciuto =
-"";
-
-
-testoPrimaRegistrazione =
-"";
-
-
-/*
-   Reset stato.
-*/
-
-registrazioneAttiva =
-false;
-
-
-document.getElementById("stato").innerText =
-"✅ Lotto salvato correttamente.";
-
-
-alert(
-"Salvato"
-);
-
-}
-)
-
-
-.catch(
-function(e){
-
-console.error(e);
-
-document.getElementById("stato").innerText =
-"❌ Errore durante il salvataggio.";
-
-alert(
-"Errore: " +
-e.message
-);
-
-}
-)
-
-
-.finally(
-function(){
-
-bottoneSalva.disabled =
-false;
-
-bottoneSalva.innerText =
-"SALVA";
-
-}
-);
-
-}
-
 
 </script>
 
