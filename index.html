@@ -810,93 +810,43 @@ function estraiProduzione(testo){
 
 function estraiQuantita(testo){
 
-  const posizione =
-    testo.indexOf(
-      "quantità "
-    );
+  const posizione = testo.indexOf("quantità ");
 
-
-  if(
-    posizione < 0
-  ){
-
+  if(posizione < 0){
     return "";
-
   }
 
+  const inizio = posizione + "quantità ".length;
 
-  const inizio =
-    posizione +
-    "quantità ".length;
+  const fineQuantita = [
+    " ingrediente ",
+    " scadenza prodotto ",
+    " prodotto ",
+    " note "
+  ];
 
+  let fine = testo.length;
 
-  /*
-     La quantità termina al primo
-     " ingrediente ".
-     
-     Questo era uno dei problemi
-     della versione precedente.
-  */
+  fineQuantita.forEach(function(parola){
 
-  let fine =
-    testo.indexOf(
-      " ingrediente ",
-      inizio
-    );
+    const posizioneParola =
+      testo.indexOf(parola, inizio);
 
+    if(
+      posizioneParola >= 0 &&
+      posizioneParola < fine
+    ){
+      fine = posizioneParola;
+    }
 
-  /*
-     Se non ci sono ingredienti dopo
-     la quantità, cerchiamo gli altri
-     campi possibili.
-  */
-
-  if(
-    fine < 0
-  ){
-
-    fine =
-      testo.indexOf(
-        " scadenza prodotto ",
-        inizio
-      );
-
-  }
-
-
-  if(
-    fine < 0
-  ){
-
-    fine =
-      testo.indexOf(
-        " note ",
-        inizio
-      );
-
-  }
-
-
-  if(
-    fine >= 0
-  ){
-
-    return testo
-      .substring(
-        inizio,
-        fine
-      )
-      .trim();
-
-  }
-
+  });
 
   return testo
     .substring(
-      inizio
+      inizio,
+      fine
     )
     .trim();
-
 }
 
 
